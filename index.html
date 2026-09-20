@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronto Digital — Prontuário & Plano Psicopedagógico</title>
+  <meta name="description" content="Sistema de prontuário clínico e educacional para registro de casos de pacientes, estagiários e equipe, com planos psicopedagógicos e anotações diárias.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOADING SCREEN
+════════════════════════════════════════ -->
+<div id="loadingScreen" style="
+  position:fixed;inset:0;background:#0f172a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;transition:opacity 0.4s ease;">
+  <div style="font-size:48px;margin-bottom:20px;animation:pulse 1.5s ease-in-out infinite">📋</div>
+  <div style="color:#fff;font-size:20px;font-weight:700;font-family:sans-serif;margin-bottom:8px">Pronto Digital</div>
+  <div style="color:rgba(255,255,255,0.4);font-size:13px;font-family:sans-serif">Carregando dados...</div>
+  <style>@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.7}}</style>
+</div>
+
+<!-- ════════════════════════════════════════
+     HEADER
+════════════════════════════════════════ -->
+<header class="app-header no-print">
+  <div class="header-brand">
+    <div class="header-logo">📋</div>
+    <div>
+      <div class="header-title">Pronto Digital</div>
+      <div class="header-subtitle">Prontuário &amp; Gestão Psicopedagógica</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="stat-pill">
+      <span>Total:</span> <strong id="totalCount">0</strong>
+    </div>
+    <!-- Connection indicator -->
+    <div id="connStatus" class="stat-pill" style="gap:6px">
+      <span id="connDot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>
+      <span id="connLabel">Conectando...</span>
+    </div>
+    <button class="btn btn-primary" onclick="openNewModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Novo Cadastro
+    </button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════
+     MAIN LAYOUT
+════════════════════════════════════════ -->
+<main class="app-main no-print">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Buscar por nome ou instituição..."
+          oninput="renderList()"
+          autocomplete="off"
+        >
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab" id="filter-todos"       onclick="setFilter('todos')">Todos</button>
+        <button class="filter-tab" id="filter-paciente"    onclick="setFilter('paciente')">Pacientes</button>
+        <button class="filter-tab" id="filter-estagiario"  onclick="setFilter('estagiario')">Estagiários</button>
+        <button class="filter-tab" id="filter-subordinado" onclick="setFilter('subordinado')">Equipe</button>
+      </div>
+    </div>
+    <div class="sidebar-list" id="recordsList">
+      <div class="empty-state">
+        <div style="font-size:28px;margin-bottom:8px">⏳</div>
+        <p>Carregando registros...</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Detail Panel ── -->
+  <section class="detail-panel" id="detailPanel">
+    <div class="detail-placeholder" id="detailPlaceholder">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h3>Nenhum registro selecionado</h3>
+      <p>Selecione um prontuário na barra lateral para visualizar os detalhes, ou crie um novo cadastro.</p>
+      <button class="btn btn-primary" style="margin-top:20px" onclick="openNewModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Criar Primeiro Prontuário
+      </button>
+    </div>
+    <div id="detailContent" style="display:none; flex-direction:column; flex:1;"></div>
+  </section>
+
+</main>
+
+<!-- ════════════════════════════════════════
+     MODAL — Cadastro / Edição
+════════════════════════════════════════ -->
+<div class="modal-backdrop no-print" id="modalForm">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Novo Prontuário</h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="recordForm" onsubmit="saveRecord(event)">
+        <input type="hidden" id="recordId">
+        <div class="form-row form-row-2 form-group">
+          <div>
+            <label class="form-label" for="recordCategory">Categoria</label>
+            <select id="recordCategory" class="form-select" required>
+              <option value="paciente">🟢 Paciente</option>
+              <option value="estagiario">🟡 Estagiário</option>
+              <option value="subordinado">🔵 Subordinado / Equipe</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="recordName">Nome Completo *</label>
+            <input type="text" id="recordName" class="form-input" placeholder="Nome do paciente ou profissional" required>
+          </div>
+        </div>
+        <div class="form-row form-row-3 form-group">
+          <div>
+            <label class="form-label" for="recordBirth">Data Nasc. / Admissão</label>
+            <input type="date" id="recordBirth" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" for="recordContact">Contato / Telefone</label>
+            <input type="text" id="recordContact" class="form-input" placeholder="(00) 00000-0000">
+          </div>
+          <div>
+            <label class="form-label" for="recordInstitution">Escola / Setor / Curso</label>
+            <input type="text" id="recordInstitution" class="form-input" placeholder="Instituição...">
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="modal-section-title">📌 1. Identificação &amp; Histórico</div>
+          <label class="form-label" for="recordHistory">Histórico Geral / Queixa Principal / Contexto</label>
+          <textarea id="recordHistory" class="form-textarea" rows="4"
+            placeholder="Descreva o contexto familiar, escolar ou profissional, queixa principal, encaminhamento, CID/hipótese diagnóstica (se houver)..."></textarea>
+        </div>
+        <div class="form-group">
+          <div class="modal-section-title">🎯 2. Plano de Intervenção Psicopedagógica</div>
+          <div class="form-group">
+            <label class="form-label" for="recordGoals">Objetivos Terapêuticos / Profissionais</label>
+            <textarea id="recordGoals" class="form-textarea" rows="3"
+              placeholder="Ex: Desenvolver coordenação motora fina, atenção sustentada, fluência leitora, habilidades sociais..."></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="recordStrategies">Estratégias &amp; Recursos Pedagógicos</label>
+            <textarea id="recordStrategies" class="form-textarea" rows="3"
+              placeholder="Ex: Jogos de pareamento, reforço positivo, fichas estruturadas, leitura compartilhada, método multissensorial..."></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button type="submit" form="recordForm" id="saveBtn" class="btn btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salvar Prontuário
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ════════════════════════════════════════
+     PRINTABLE REPORT (Hidden)
+════════════════════════════════════════ -->
+<div id="printableReport" style="display:none;"></div>
+
+<!-- ════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════ -->
+<script>
+// ─── Supabase Init ───────────────────────────────────────
+const SUPABASE_URL  = 'https://ezimegtzqddlfyxzmkkw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6aW1lZ3R6cWRkbGZ5eHpta2t3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MTc3NzQsImV4cCI6MjEwNTQ5Mzc3NH0.y3ARuL53lvmC5YyTvgZF0J_dPKQ9K0KZn2B9Rr37luE';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ─── State ───────────────────────────────────────────────
+let records       = [];  // local cache
+let activeRecordId = null;
+let currentFilter  = 'todos';
+let activeTab      = 'prontuario';
+let isSaving       = false;
+
+// ─── DB helpers ──────────────────────────────────────────
+async function loadRecords() {
+  const { data, error } = await db
+    .from('records')
+    .select('*, daily_notes(*)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    setConnStatus(false);
+    toast('Erro ao carregar dados: ' + error.message, 'error');
+    return;
+  }
+
+  setConnStatus(true);
+  // Normalise daily_notes ordering (newest first)
+  records = (data || []).map(r => ({
+    ...r,
+    dailyNotes: (r.daily_notes || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+  }));
+  renderList();
+  updateStats();
+}
+
+async function dbInsertRecord(payload) {
+  const { data, error } = await db.from('records').insert([payload]).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbUpdateRecord(id, payload) {
+  const { error } = await db.from('records').update(payload).eq('id', id);
+  if (error) throw error;
+}
+
+async function dbDeleteRecord(id) {
+  const { error } = await db.from('records').delete().eq('id', id);
+  if (error) throw error;
+}
+
+async function dbInsertNote(payload) {
+  const { data, error } = await db.from('daily_notes').insert([payload]).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbDeleteNote(noteId) {
+  const { error } = await db.from('daily_notes').delete().eq('id', noteId);
+  if (error) throw error;
+}
+
+// ─── Connection Status ───────────────────────────────────
+function setConnStatus(online) {
+  const dot   = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  if (online) {
+    dot.style.background   = '#10b981';
+    label.textContent      = 'Conectado';
+  } else {
+    dot.style.background   = '#f43f5e';
+    label.textContent      = 'Sem conexão';
+  }
+}
+
+// ─── Stats ───────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('totalCount').textContent = records.length;
+}
+
+// ─── Toast ───────────────────────────────────────────────
+function toast(msg, type = '') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type ? 'toast-'+type : ''}`;
+  const icon = type==='success'?'✅':type==='error'?'❌':'ℹ️';
+  t.innerHTML = `<span>${icon}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
+
+// ─── Filter ──────────────────────────────────────────────
+function setFilter(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-tab').forEach(b => {
+    b.classList.remove('active','active-paciente','active-estagiario','active-subordinado');
+  });
+  const btn = document.getElementById(`filter-${cat}`);
+  btn.classList.add('active');
+  if (cat !== 'todos') btn.classList.add(`active-${cat}`);
+  renderList();
+}
+
+// ─── Badge helpers ────────────────────────────────────────
+function badgeClass(cat) {
+  return {paciente:'badge-paciente',estagiario:'badge-estagiario',subordinado:'badge-subordinado'}[cat]||'';
+}
+function catLabel(cat) {
+  return {paciente:'Paciente',estagiario:'Estagiário',subordinado:'Equipe'}[cat]||cat;
+}
+
+// ─── Sidebar List ────────────────────────────────────────
+function renderList() {
+  const container = document.getElementById('recordsList');
+  const search = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+  const filtered = records.filter(r => {
+    const matchCat    = currentFilter==='todos' || r.category===currentFilter;
+    const matchSearch = !search ||
+      r.name.toLowerCase().includes(search) ||
+      (r.institution && r.institution.toLowerCase().includes(search));
+    return matchCat && matchSearch;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <p>Nenhum registro encontrado.<br>Crie um novo cadastro.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(r => `
+    <div
+      class="record-card ${activeRecordId===r.id?'active':''}"
+      onclick="selectRecord('${r.id}')"
+    >
+      <div class="record-card-top">
+        <div class="record-card-name">${escHtml(r.name)}</div>
+        <span class="badge ${badgeClass(r.category)}">${catLabel(r.category)}</span>
+      </div>
+      <div class="record-card-sub">${escHtml(r.institution||'Sem instituição vinculada')}</div>
+      <div class="record-card-meta">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/></svg>
+        ${(r.dailyNotes||[]).length} anotações
+        ${r.date ? `· ${formatDate(r.date)}` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Select Record ───────────────────────────────────────
+function selectRecord(id) {
+  activeRecordId = id;
+  activeTab = 'prontuario';
+  renderList();
+  renderDetail(id);
+}
+
+// ─── Detail Panel ────────────────────────────────────────
+function renderDetail(id) {
+  const record = records.find(r => r.id===id);
+  if (!record) return;
+
+  document.getElementById('detailPlaceholder').style.display = 'none';
+  const dc = document.getElementById('detailContent');
+  dc.style.display = 'flex';
+
+  dc.innerHTML = `
+    <div class="detail-tabs">
+      <button class="detail-tab ${activeTab==='prontuario'?'active':''}" onclick="switchTab('prontuario')">📋 Prontuário</button>
+      <button class="detail-tab ${activeTab==='notas'?'active':''}" onclick="switchTab('notas')">
+        📅 Anotações Diárias
+        ${(record.dailyNotes||[]).length>0
+          ? `<span style="margin-left:6px;background:var(--indigo-100);color:var(--indigo-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${record.dailyNotes.length}</span>`
+          : ''}
+      </button>
+    </div>
+    <div id="tabContent" style="flex:1;overflow-y:auto;padding:28px 32px;">
+      ${activeTab==='prontuario' ? renderProntuarioTab(record) : renderNotasTab(record)}
+    </div>
+  `;
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  renderDetail(activeRecordId);
+}
+
+// ─── Prontuário Tab ──────────────────────────────────────
+function renderProntuarioTab(record) {
+  const notes = record.dailyNotes || [];
+  return `
+    <div class="prontuario-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <h2 class="prontuario-title">${escHtml(record.name)}</h2>
+          <span class="badge ${badgeClass(record.category)}">${catLabel(record.category)}</span>
+        </div>
+        <div class="prontuario-meta">
+          ${record.contact    ? `<span>📞 ${escHtml(record.contact)}</span>`     : ''}
+          ${record.institution? `<span>🏫 ${escHtml(record.institution)}</span>` : ''}
+          ${record.date       ? `<span>📅 ${formatDate(record.date)}</span>`     : ''}
+          <span style="color:var(--navy-300)">|</span>
+          <span>Criado em: ${formatDate(record.created_at, true)}</span>
+        </div>
+      </div>
+      <div class="action-group">
+        <button class="btn btn-ghost btn-sm" onclick="printReport('${record.id}')">🖨️ Relatório</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${record.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${record.id}')">🗑️ Excluir</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">1. Identificação &amp; Contexto Inicial</div>
+      <div class="info-card">
+        <p>${record.history ? escHtml(record.history) : '<em style="color:var(--navy-400)">Nenhuma observação registrada.</em>'}</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">2 &amp; 3. Plano Psicopedagógico</div>
+      <div class="plan-grid">
+        <div class="plan-card plan-card-objectives">
+          <div class="plan-card-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Objetivos
+          </div>
+          <p>${record.goals ? escHtml(record.goals) : '<em style="opacity:.6">Sem objetivos definidos.</em>'}</p>
+        </div>
+        <div class="plan-card plan-card-strategies">
+          <div class="plan-card-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+            Estratégias &amp; Recursos
+          </div>
+          <p>${record.strategies ? escHtml(record.strategies) : '<em style="opacity:.6">Sem estratégias definidas.</em>'}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">4. Anotações Diárias</div>
+      ${notes.length === 0
+        ? `<div class="info-card" style="text-align:center;color:var(--navy-400);font-size:13px;padding:24px">
+             Nenhuma anotação registrada ainda.
+             <br><button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="switchTab('notas')">
+               + Adicionar primeira anotação
+             </button>
+           </div>`
+        : `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+             <div style="background:var(--indigo-50);border:1px solid var(--indigo-100);border-radius:var(--radius-md);padding:16px 24px;text-align:center;min-width:110px;">
+               <div style="font-size:32px;font-weight:800;color:var(--indigo-600)">${notes.length}</div>
+               <div style="font-size:10px;color:var(--indigo-400);font-weight:700;margin-top:2px;letter-spacing:.5px">SESSÕES</div>
+             </div>
+             <div style="flex:1">
+               <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+                 Última anotação em <strong>${notes[0]?.date ? formatDate(notes[0].date) : '—'}</strong>:<br>
+                 <em>${escHtml((notes[0]?.content||'').substring(0,160))}${(notes[0]?.content||'').length>160?'...':''}</em>
+               </p>
+               <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="switchTab('notas')">
+                 Ver todas as anotações →
+               </button>
+             </div>
+           </div>`
+      }
+    </div>
+  `;
+}
+
+// ─── Notas Tab ───────────────────────────────────────────
+function renderNotasTab(record) {
+  const notes = record.dailyNotes || [];
+  return `
+    <div class="prontuario-header" style="padding-bottom:16px;margin-bottom:20px">
+      <div>
+        <h2 class="prontuario-title" style="font-size:20px">Anotações Diárias</h2>
+        <div class="prontuario-meta">
+          <span>${escHtml(record.name)}</span>
+          <span class="badge ${badgeClass(record.category)}">${catLabel(record.category)}</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="toggleNoteForm()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Nova Anotação
+      </button>
+    </div>
+
+    <!-- Note Form -->
+    <div id="noteFormContainer" class="note-form" style="display:none;margin-bottom:20px">
+      <div class="note-form-row">
+        <div>
+          <label class="form-label">Data da Sessão</label>
+          <input type="date" id="noteDate" class="form-input" value="${today()}">
+        </div>
+        <div>
+          <label class="form-label">Título / Resumo</label>
+          <input type="text" id="noteTitle" class="form-input" placeholder="Ex: Sessão 3 — Atividade de leitura">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Descrição / Evolução Observada</label>
+        <textarea id="noteText" class="form-textarea" rows="4"
+          placeholder="Descreva os acontecimentos, reações, avanços, dificuldades observadas e conduta adotada nesta sessão..."></textarea>
+      </div>
+      <div class="note-form-actions" style="margin-top:12px">
+        <button class="btn btn-ghost btn-sm" onclick="toggleNoteForm()">Cancelar</button>
+        <button class="btn btn-success btn-sm" id="addNoteBtn" onclick="addNote('${record.id}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          Salvar Anotação
+        </button>
+      </div>
+    </div>
+
+    <!-- Notes List -->
+    ${notes.length===0
+      ? `<div class="empty-state">
+           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+           <p>Nenhuma anotação registrada ainda.<br>Clique em <strong>Nova Anotação</strong> para começar.</p>
+         </div>`
+      : notes.map(note => `
+          <div class="note-item" id="note-${note.id}">
+            <button class="note-delete" onclick="deleteNote('${record.id}','${note.id}')" title="Excluir">×</button>
+            <div class="note-item-header">
+              <div class="note-item-title">${escHtml(note.title||'Sessão Regular')}</div>
+              <div class="note-item-date">📅 ${formatDate(note.date)}</div>
+            </div>
+            <div class="note-item-body">${escHtml(note.content)}</div>
+          </div>
+        `).join('')
+    }
+  `;
+}
+
+// ─── Note Form ───────────────────────────────────────────
+function toggleNoteForm() {
+  const f = document.getElementById('noteFormContainer');
+  if (!f) return;
+  const hidden = f.style.display==='none'||!f.style.display;
+  f.style.display = hidden ? 'block' : 'none';
+  if (hidden) {
+    document.getElementById('noteDate').value = today();
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteText').value = '';
+    setTimeout(() => document.getElementById('noteText')?.focus(), 50);
+  }
+}
+
+// ─── Add Note ────────────────────────────────────────────
+async function addNote(recordId) {
+  const date    = document.getElementById('noteDate').value;
+  const title   = document.getElementById('noteTitle').value.trim();
+  const content = document.getElementById('noteText').value.trim();
+  if (!content) { toast('Descreva o conteúdo da anotação.', 'error'); return; }
+
+  const btn = document.getElementById('addNoteBtn');
+  if (btn) { btn.disabled=true; btn.textContent='Salvando...'; }
+
+  try {
+    const newNote = await dbInsertNote({ record_id: recordId, date, title, content });
+    // Update local cache
+    const rec = records.find(r => r.id===recordId);
+    if (rec) {
+      if (!rec.dailyNotes) rec.dailyNotes = [];
+      rec.dailyNotes.unshift(newNote);
+    }
+    toast('Anotação registrada!', 'success');
+    renderDetail(recordId);
+    renderList();
+    // Re-show form on notes tab
+    switchTab('notas');
+  } catch(e) {
+    toast('Erro ao salvar anotação: ' + e.message, 'error');
+    if (btn) { btn.disabled=false; btn.textContent='Salvar Anotação'; }
+  }
+}
+
+// ─── Delete Note ─────────────────────────────────────────
+async function deleteNote(recordId, noteId) {
+  if (!confirm('Excluir esta anotação permanentemente?')) return;
+  try {
+    await dbDeleteNote(noteId);
+    const rec = records.find(r => r.id===recordId);
+    if (rec) rec.dailyNotes = (rec.dailyNotes||[]).filter(n => n.id!==noteId);
+    toast('Anotação removida.', 'success');
+    renderDetail(recordId);
+    renderList();
+  } catch(e) {
+    toast('Erro ao excluir: ' + e.message, 'error');
+  }
+}
+
+// ─── Modal ───────────────────────────────────────────────
+function openNewModal() {
+  document.getElementById('modalTitle').textContent = 'Novo Prontuário';
+  document.getElementById('recordForm').reset();
+  document.getElementById('recordId').value = '';
+  document.getElementById('saveBtn').textContent = 'Salvar Prontuário';
+  document.getElementById('saveBtn').disabled = false;
+  document.getElementById('modalForm').classList.add('open');
+}
+
+function openEditModal(id) {
+  const r = records.find(x => x.id===id);
+  if (!r) return;
+  document.getElementById('modalTitle').textContent = 'Editar Prontuário';
+  document.getElementById('recordId').value          = r.id;
+  document.getElementById('recordCategory').value    = r.category;
+  document.getElementById('recordName').value        = r.name;
+  document.getElementById('recordBirth').value       = r.date||'';
+  document.getElementById('recordContact').value     = r.contact||'';
+  document.getElementById('recordInstitution').value = r.institution||'';
+  document.getElementById('recordHistory').value     = r.history||'';
+  document.getElementById('recordGoals').value       = r.goals||'';
+  document.getElementById('recordStrategies').value  = r.strategies||'';
+  document.getElementById('saveBtn').textContent     = 'Salvar Alterações';
+  document.getElementById('saveBtn').disabled        = false;
+  document.getElementById('modalForm').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalForm').classList.remove('open');
+}
+
+document.getElementById('modalForm').addEventListener('click', function(e) {
+  if (e.target===this) closeModal();
+});
+
+// ─── Save Record ─────────────────────────────────────────
+async function saveRecord(e) {
+  e.preventDefault();
+  if (isSaving) return;
+  isSaving = true;
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  const id          = document.getElementById('recordId').value;
+  const category    = document.getElementById('recordCategory').value;
+  const name        = document.getElementById('recordName').value.trim();
+  const date        = document.getElementById('recordBirth').value;
+  const contact     = document.getElementById('recordContact').value.trim();
+  const institution = document.getElementById('recordInstitution').value.trim();
+  const history     = document.getElementById('recordHistory').value.trim();
+  const goals       = document.getElementById('recordGoals').value.trim();
+  const strategies  = document.getElementById('recordStrategies').value.trim();
+
+  const payload = { category, name, date, contact, institution, history, goals, strategies };
+
+  try {
+    if (id) {
+      await dbUpdateRecord(id, payload);
+      const idx = records.findIndex(r => r.id===id);
+      if (idx !== -1) records[idx] = { ...records[idx], ...payload };
+      toast('Prontuário atualizado!', 'success');
+    } else {
+      const newRec = await dbInsertRecord(payload);
+      newRec.dailyNotes = [];
+      records.unshift(newRec);
+      activeRecordId = newRec.id;
+      toast('Prontuário criado!', 'success');
+    }
+    renderList();
+    updateStats();
+    if (activeRecordId) renderDetail(activeRecordId);
+    closeModal();
+  } catch(err) {
+    toast('Erro ao salvar: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = id ? 'Salvar Alterações' : 'Salvar Prontuário';
+  } finally {
+    isSaving = false;
+  }
+}
+
+// ─── Delete Record ───────────────────────────────────────
+async function deleteRecord(id) {
+  const rec = records.find(r => r.id===id);
+  if (!rec) return;
+  if (!confirm(`Excluir o prontuário de "${rec.name}" e todas as anotações?\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await dbDeleteRecord(id);
+    records = records.filter(r => r.id!==id);
+    activeRecordId = null;
+    document.getElementById('detailPlaceholder').style.display = '';
+    document.getElementById('detailContent').style.display = 'none';
+    renderList();
+    updateStats();
+    toast('Prontuário excluído.', 'success');
+  } catch(e) {
+    toast('Erro ao excluir: ' + e.message, 'error');
+  }
+}
+
+// ─── Print ───────────────────────────────────────────────
+function printReport(id) {
+  const record = records.find(r => r.id===id);
+  if (!record) return;
+  const notes = record.dailyNotes||[];
+  const pr = document.getElementById('printableReport');
+  pr.style.display = 'block';
+  pr.innerHTML = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1e293b;max-width:780px;margin:0 auto">
+      <div style="border-bottom:3px solid #0f172a;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:4px">Sistema Pronto Digital</div>
+          <h1 style="font-size:22px;font-weight:800;margin:0;color:#0f172a">Relatório Psicopedagógico</h1>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#64748b">
+          <div>Emitido em: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></div>
+          <div>Tipo: <strong>${catLabel(record.category)}</strong></div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">1. Dados de Identificação</h2>
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <tr><td style="padding:4px 0;color:#64748b;width:35%">Nome Completo</td><td style="font-weight:600">${escHtml(record.name)}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Data Nasc./Ref.</td><td>${record.date?formatDate(record.date):'Não informada'}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Contato</td><td>${escHtml(record.contact||'Não informado')}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Instituição / Setor</td><td>${escHtml(record.institution||'Não informado')}</td></tr>
+        </table>
+        ${record.history?`<div style="margin-top:10px;padding:10px 14px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.history)}</div>`:''}
+      </div>
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">2. Objetivos de Desenvolvimento</h2>
+        <div style="padding:10px 14px;background:#eef2ff;border-left:3px solid #4f46e5;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.goals||'Nenhum objetivo registrado.')}</div>
+      </div>
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">3. Estratégias &amp; Condutas</h2>
+        <div style="padding:10px 14px;background:#ecfdf5;border-left:3px solid #059669;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.strategies||'Nenhuma estratégia registrada.')}</div>
+      </div>
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">4. Registro de Sessões &amp; Evolução</h2>
+        ${notes.length===0
+          ? '<p style="font-size:12px;color:#94a3b8">Nenhuma anotação registrada.</p>'
+          : notes.map(n=>`
+              <div style="margin-bottom:10px;padding:8px 12px 8px 14px;border-left:2px solid #94a3b8;font-size:12px">
+                <div style="font-weight:700;margin-bottom:3px">${formatDate(n.date)} — ${escHtml(n.title||'Sessão Regular')}</div>
+                <div style="white-space:pre-line;color:#374151">${escHtml(n.content)}</div>
+              </div>
+            `).join('')}
+      </div>
+      <div style="margin-top:60px;display:flex;justify-content:center;text-align:center">
+        <div style="border-top:1.5px solid #0f172a;width:280px;padding-top:8px;font-size:11px;color:#475569">
+          Assinatura do Profissional Responsável
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { window.print(); pr.style.display='none'; }, 100);
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function formatDate(ds) {
+  if (!ds) return '—';
+  try {
+    // Handle both ISO datetime and date-only strings
+    const d = new Date(ds.includes('T') ? ds : ds + 'T12:00:00');
+    return d.toLocaleDateString('pt-BR');
+  } catch(e) { return ds; }
+}
+
+// ─── Keyboard Shortcuts ──────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') closeModal();
+  if ((e.ctrlKey||e.metaKey) && e.key==='n') { e.preventDefault(); openNewModal(); }
+});
+
+// ─── Init ────────────────────────────────────────────────
+(async function init() {
+  setFilter('todos');
+  await loadRecords();
+  // Hide loading screen
+  const ls = document.getElementById('loadingScreen');
+  ls.style.opacity = '0';
+  setTimeout(() => ls.style.display='none', 400);
+})();
+</script>
+
+</body>
+</html>
