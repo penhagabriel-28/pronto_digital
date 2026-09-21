@@ -372,6 +372,42 @@ body {
 .badge-subordinado { background: var(--indigo-100);  color: var(--indigo-700); }
 .badge-integrar    { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
 .badge-multi       { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.badge-triage-psico { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+.badge-triage-aba   { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+.filter-tab.active-psico { background: #7c3aed; color: #fff; }
+.filter-tab.active-aba   { background: #0284c7; color: #fff; }
+
+/* ── Menu de Ações TDAH-Friendly (Reduz poluição de botões) ── */
+.action-dropdown { position: relative; display: inline-block; }
+.action-dropdown-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px);
+  background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); min-width: 200px; z-index: 150; overflow: hidden;
+  animation: fadeIn 0.15s ease-out;
+}
+.action-dropdown-menu.open { display: flex; flex-direction: column; }
+.action-dropdown-item {
+  padding: 10px 14px; font-size: 12.5px; color: var(--navy-700);
+  background: transparent; border: none; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font-family: inherit; width: 100%;
+  transition: background var(--ease-fast);
+}
+.action-dropdown-item:hover { background: var(--navy-50); color: var(--navy-950); }
+.action-dropdown-item.danger { color: var(--rose-600); border-top: 1px solid var(--border-light); }
+.action-dropdown-item.danger:hover { background: #fff1f2; }
+
+/* ── Caixa Destacada: Resultado da Sessão ── */
+.session-result-box {
+  margin-top: 10px; background: #ecfdf5; border: 1.5px solid #a7f3d0;
+  border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12.5px;
+  color: #065f46; line-height: 1.5;
+}
+.session-result-title {
+  font-weight: 800; color: #047857; display: flex; align-items: center;
+  gap: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
 
 /* Empty state */
 .empty-state {

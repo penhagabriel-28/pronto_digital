@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronto Digital — Prontuário &amp; Gestão Clínica e Psicopedagógica</title>
-  <meta name="description" content="Sistema de prontuário clínico e educacional para pacientes e equipe, com planos psicopedagógicos, relatórios parciais de desempenho ABA, histórico contínuo e anexos.">
+  <title>Pronto Digital — Prontuário &amp; Gestão Psicopedagógica e ABA</title>
+  <meta name="description" content="Sistema de prontuário clínico e educacional para pacientes de Psicopedagogia e ABA, com planos de intervenção, relatórios de sessão e histórico.">
   <meta name="theme-color" content="#0f172a">
   <link rel="stylesheet" href="style.css">
   <!-- Supabase JS SDK -->
@@ -78,16 +78,19 @@
         >
       </div>
 
-      <!-- Filtro Categoria (Estagiários removido) -->
+      <!-- TRIAGEM PRINCIPAL: Psicopedagogia vs ABA (TDAH-friendly) -->
+      <div style="font-size:10.5px;font-weight:700;color:var(--navy-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
+        Triagem / Área Clínica
+      </div>
       <div class="filter-tabs">
-        <button class="filter-tab" id="filter-todos"       onclick="setFilter('todos')">Todos</button>
-        <button class="filter-tab" id="filter-paciente"    onclick="setFilter('paciente')">Pacientes</button>
-        <button class="filter-tab" id="filter-subordinado" onclick="setFilter('subordinado')">Equipe</button>
+        <button class="filter-tab active" id="triage-todos" onclick="setTriageFilter('todos')">Todos</button>
+        <button class="filter-tab" id="triage-psico" onclick="setTriageFilter('psicopedagogia')">🧠 Psico</button>
+        <button class="filter-tab" id="triage-aba"   onclick="setTriageFilter('aba')">🧩 ABA</button>
       </div>
 
       <!-- Filtro Clínica (Integrar e Multi) -->
-      <div class="filter-tabs" style="margin-top:6px;">
-        <button class="filter-tab" id="clinic-todos"    onclick="setClinicFilter('todos')">Todas Clínicas</button>
+      <div class="filter-tabs" style="margin-top:8px;">
+        <button class="filter-tab active" id="clinic-todos"    onclick="setClinicFilter('todos')">Todas Clínicas</button>
         <button class="filter-tab" id="clinic-integrar" onclick="setClinicFilter('Integrar')">🌿 Integrar</button>
         <button class="filter-tab" id="clinic-multi"    onclick="setClinicFilter('Multi')">🟣 Multi</button>
       </div>
@@ -106,7 +109,7 @@
       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
       </svg>
-      <h3>Nenhum registro selecionado</h3>
+      <h3>Nenhum paciente selecionado</h3>
       <p>Selecione um prontuário na barra lateral para visualizar os detalhes, ou crie um novo cadastro.</p>
       <button class="btn btn-primary" style="margin-top:20px" onclick="openNewModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -131,7 +134,15 @@
       <form id="recordForm" onsubmit="saveRecord(event)">
         <input type="hidden" id="recordId">
 
+        <!-- Triagem e Clínica -->
         <div class="form-row form-row-3 form-group">
+          <div>
+            <label class="form-label" for="recordTriage">Triagem / Área *</label>
+            <select id="recordTriage" class="form-select" required>
+              <option value="psicopedagogia">🧠 Psicopedagogia</option>
+              <option value="aba">🧩 ABA (Comportamental)</option>
+            </select>
+          </div>
           <div>
             <label class="form-label" for="recordClinic">Clínica *</label>
             <select id="recordClinic" class="form-select" required>
@@ -140,15 +151,8 @@
             </select>
           </div>
           <div>
-            <label class="form-label" for="recordCategory">Categoria *</label>
-            <select id="recordCategory" class="form-select" required>
-              <option value="paciente">🟢 Paciente</option>
-              <option value="subordinado">🔵 Subordinado / Equipe</option>
-            </select>
-          </div>
-          <div>
             <label class="form-label" for="recordName">Nome Completo *</label>
-            <input type="text" id="recordName" class="form-input" placeholder="Nome do paciente ou profissional" required>
+            <input type="text" id="recordName" class="form-input" placeholder="Nome do paciente" required>
           </div>
         </div>
 
@@ -162,8 +166,8 @@
             <input type="text" id="recordContact" class="form-input" placeholder="(00) 00000-0000">
           </div>
           <div>
-            <label class="form-label" for="recordInstitution">Escola / Setor / Curso</label>
-            <input type="text" id="recordInstitution" class="form-input" placeholder="Instituição...">
+            <label class="form-label" for="recordInstitution">Escola / Instituição</label>
+            <input type="text" id="recordInstitution" class="form-input" placeholder="Escola...">
           </div>
         </div>
 
@@ -171,20 +175,20 @@
           <div class="modal-section-title">📌 1. Identificação &amp; Histórico</div>
           <label class="form-label" for="recordHistory">Histórico Geral / Queixa Principal / Contexto</label>
           <textarea id="recordHistory" class="form-textarea" rows="4"
-            placeholder="Descreva o contexto familiar, escolar ou profissional, queixa principal, encaminhamento, CID/hipótese diagnóstica (se houver)..."></textarea>
+            placeholder="Descreva o contexto familiar, queixa principal, encaminhamento, hipótese diagnóstica..."></textarea>
         </div>
 
         <div class="form-group">
-          <div class="modal-section-title">🎯 2. Plano de Intervenção Psicopedagógica</div>
+          <div class="modal-section-title">🎯 2. Objetivos &amp; Recursos</div>
           <div class="form-group">
-            <label class="form-label" for="recordGoals">Objetivos Terapêuticos / Profissionais</label>
+            <label class="form-label" for="recordGoals">Objetivos Terapêuticos Iniciais</label>
             <textarea id="recordGoals" class="form-textarea" rows="3"
-              placeholder="Ex: Desenvolver coordenação motora fina, atenção sustentada, fluência leitora, habilidades sociais..."></textarea>
+              placeholder="Ex: Desenvolver coordenação motora fina, atenção sustentada, regulação comportamental..."></textarea>
           </div>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label" for="recordStrategies">Estratégias &amp; Recursos Pedagógicos</label>
+            <label class="form-label" for="recordStrategies">Estratégias &amp; Recursos</label>
             <textarea id="recordStrategies" class="form-textarea" rows="3"
-              placeholder="Ex: Jogos de pareamento, reforço positivo, fichas estruturadas, leitura compartilhada, método multissensorial..."></textarea>
+              placeholder="Ex: Jogos de regras, pistas visuais, reforço positivo, fichas estruturadas..."></textarea>
           </div>
         </div>
       </form>
@@ -200,7 +204,7 @@
 </div>
 
 <!-- ════════════════════════════════════════
-     MODAL — Plano Interdisciplinar
+     MODAL — Plano Interdisciplinar (Simplificado TDAH)
 ════════════════════════════════════════ -->
 <div class="modal-backdrop no-print" id="modalPlan">
   <div class="modal-box modal-box-lg" role="dialog" aria-modal="true">
@@ -281,29 +285,26 @@
           </div>
         </div>
 
-        <!-- 4. Metas e Progressão -->
+        <!-- 4. Metas Mês a Mês (APENAS MÊS A MÊS, SEM POLUIÇÃO DE REGRAS) -->
         <div class="plan-section-card">
-          <h4>4. Metas e Progressão</h4>
-          <div class="form-group">
-            <label class="form-label">Metas Mês a Mês (Formato: Mês | Meta)</label>
-            <textarea id="planMonthlyGoals" class="form-textarea" rows="4" placeholder="Mês 1 | Realizar linha de base; identificar preferências e rotina...&#10;Mês 2 | Fortalecer consciência silábica, leitura de palavras e frases..."></textarea>
-          </div>
+          <h4>4. Metas Mês a Mês</h4>
+          <p style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px;">Defina o objetivo principal para cada mês do acompanhamento:</p>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Regras de Progressão (Um critério por linha)</label>
-            <textarea id="planProgressionRules" class="form-textarea" rows="3" placeholder="• Avançar quando apresentar cerca de 80% de respostas adequadas em 2 a 3 sessões, com ajuda mínima.&#10;• Quando houver dificuldade persistente, reduzir uma dimensão da tarefa..."></textarea>
+            <label class="form-label">Planejamento Mensal (Formato: Mês | Meta)</label>
+            <textarea id="planMonthlyGoals" class="form-textarea" rows="4" placeholder="Mês 1 | Realizar linha de base; identificar preferências e rotina...&#10;Mês 2 | Fortalecer consciência silábica, leitura de palavras e frases...&#10;Mês 3 | Aumentar independência e situações funcionais...&#10;Mês 4 | Generalizar habilidades e orientar família..."></textarea>
           </div>
         </div>
 
-        <!-- 5. Orientação à Família -->
+        <!-- 5. Orientação e Observação para a Família -->
         <div class="plan-section-card">
-          <h4>5. Orientação à Família</h4>
+          <h4>5. Orientação e Observações para a Família</h4>
           <div class="form-group">
-            <label class="form-label">Prática Breve e Natural</label>
-            <textarea id="planFamilyBrief" class="form-textarea" rows="2" placeholder="Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova..."></textarea>
+            <label class="form-label">Prática Breve e Observações para o Dia a Dia</label>
+            <textarea id="planFamilyBrief" class="form-textarea" rows="2" placeholder="Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço e oferecer tempo para responder..."></textarea>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Orientações Práticas por Situação (Formato: Situação | Conduta Familiar)</label>
-            <textarea id="planFamilyGuidelines" class="form-textarea" rows="5" placeholder="Leitura | Ler histórias curtas, pedir que localize letras ou palavras conhecidas...&#10;Escrita | Estimular a escrita do nome completo com modelo reduzido gradualmente...&#10;Tempo e números | Usar calendário e relógio na rotina..."></textarea>
+            <textarea id="planFamilyGuidelines" class="form-textarea" rows="5" placeholder="Leitura | Ler histórias curtas, pedir que localize letras ou palavras conhecidas...&#10;Escrita | Estimular a escrita do nome completo com modelo reduzido gradualmente...&#10;Tempo e números | Usar calendário e relógio na rotina...&#10;Comunicação | Dar tempo para responder; ampliar a fala sem corrigir com rigidez...&#10;Brincar e autonomia | Brincadeiras de faz de conta e organização de materiais..."></textarea>
           </div>
         </div>
       </form>
@@ -339,29 +340,22 @@
     </div>
     <div class="modal-body" style="padding:22px 24px;">
       <div class="reports-dashboard">
-        <!-- Subtabs como na imagem -->
         <div class="reports-subtabs">
-          <button class="reports-subtab" onclick="toast('Módulo de Métricas de Atendimento carregado.')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Métricas de Atendimento
-          </button>
-          <button class="reports-subtab" onclick="toast('Módulo de Entrega de Relatórios.')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
-            Entrega de Relatórios
-          </button>
           <button class="reports-subtab active">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Evolução AT ABA
           </button>
+          <button class="reports-subtab" onclick="toast('Módulo de Métricas.')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Métricas de Atendimento
+          </button>
         </div>
 
-        <!-- Filtros (Paciente, Data Início, Data Fim) -->
         <div class="reports-filter-card">
           <div>
             <label class="form-label" for="reportFilterPatient">Paciente</label>
             <select id="reportFilterPatient" class="form-select" onchange="renderReportsDashboard()">
               <option value="all">✨ Todos os Pacientes (Visão Geral de Planos ABA)</option>
-              <!-- Populated dynamically -->
             </select>
           </div>
           <div>
@@ -380,7 +374,6 @@
           </div>
         </div>
 
-        <!-- Metric Cards -->
         <div class="metric-cards-grid">
           <div class="metric-card">
             <div class="metric-card-icon blue">📈</div>
@@ -405,16 +398,12 @@
           </div>
         </div>
 
-        <!-- Tabela Consolidada -->
         <div class="reports-table-card">
           <div class="reports-table-header">
             <div>
               <h4 style="font-size:14.5px;font-weight:700;color:var(--navy-900);display:flex;align-items:center;gap:8px;">
                 <span style="color:#7c3aed;">⚡</span> Todos os Planos ABA Registrados
               </h4>
-              <p style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                Lista consolidada de todos os registros de Plano ABA salvos em agendamentos.
-              </p>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -430,9 +419,7 @@
                   <th style="width:14%;text-align:right">Ações</th>
                 </tr>
               </thead>
-              <tbody id="reportsTableBody">
-                <!-- Populated dynamically -->
-              </tbody>
+              <tbody id="reportsTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -466,13 +453,10 @@
         <input type="hidden" id="sheetReportId">
         <input type="hidden" id="sheetRecordId">
 
-        <!-- Grid de Identificação Superior -->
         <div class="session-info-grid">
           <div>
             <label class="form-label">Paciente *</label>
-            <select id="sheetPatientSelect" class="form-select" required onchange="onSheetPatientChange(this.value)">
-              <!-- Dynamic -->
-            </select>
+            <select id="sheetPatientSelect" class="form-select" required onchange="onSheetPatientChange(this.value)"></select>
           </div>
           <div>
             <label class="form-label">Terapeuta Responsável *</label>
@@ -498,10 +482,9 @@
           </div>
         </div>
 
-        <!-- Instruções Rápidas -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11.5px;color:var(--navy-600);">
           <div>
-            <strong>Legenda de Tentativas:</strong>
+            <strong>Legenda:</strong>
             <span class="badge" style="background:#dcfce7;color:#15803d;margin-left:6px;">RI (Independente)</span>
             <span class="badge" style="background:#fef9c3;color:#a16207;margin-left:4px;">AP (Ajuda Parcial)</span>
             <span class="badge" style="background:#fee2e2;color:#b91c1c;margin-left:4px;">AT (Ajuda Total)</span>
@@ -511,7 +494,6 @@
           <button type="button" class="btn btn-ghost btn-xs" onclick="addCustomSheetRow()">+ Adicionar Linha</button>
         </div>
 
-        <!-- Matriz de Tentativas (1 a 12) -->
         <div class="attempts-matrix-wrap">
           <table class="attempts-matrix" id="sessionAttemptsTable">
             <thead>
@@ -539,13 +521,10 @@
                 <th style="width:24px"></th>
               </tr>
             </thead>
-            <tbody id="sessionAttemptsTbody">
-              <!-- Populated dynamically -->
-            </tbody>
+            <tbody id="sessionAttemptsTbody"></tbody>
           </table>
         </div>
 
-        <!-- 4 Cards de Totais Gerais Consolidados -->
         <div class="summary-counters-grid">
           <div class="summary-counter-card summary-card-ri">
             <div class="label">RESPOSTA INDEPENDENTE (RI)</div>
@@ -610,17 +589,18 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── State ───────────────────────────────────────────────
-let records        = [];  // local cache
-let partialReports = [];  // local cache de relatórios parciais
-let activeRecordId  = null;
-let currentFilter   = 'todos';
-let clinicFilter    = 'todos';
-let activeTab       = 'historico'; // padrão: histórico cronológico completo
-let isSaving        = false;
-let editingPlan     = null;
-let editingReportId = null;
+let records         = [];  // local cache
+let partialReports  = [];  // local cache de relatórios parciais
+let activeRecordId   = null;
+let currentFilter    = 'todos';
+let clinicFilter     = 'todos';
+let triageFilter     = 'todos'; // 'todos', 'psicopedagogia', 'aba'
+let activeTab        = 'historico';
+let isSaving         = false;
+let editingPlan      = null;
+let editingReportId  = null;
 
-// ─── 14 Programas ABA Padrão do Modelo de Referência ───────
+// ─── 14 Programas ABA Padrão ──────────────────────────────
 const DEFAULT_ABA_PROGRAMS = [
   { no: 1, name: "Intraverbal complexo", desc: "grupos de 4", tents: 12, trials: ["AP","RI","RI","RI","AP","","","","","","",""] },
   { no: 2, name: "Jogos", desc: "Regras Perder Esperar Negociar", tents: 12, trials: ["","","","","","","","","","","",""] },
@@ -689,7 +669,6 @@ const MediaDB = {
       tx.onerror = e => reject(e);
     });
   },
-  // Relatórios Parciais
   async saveReport(report) {
     await this.init();
     return new Promise((resolve, reject) => {
@@ -708,16 +687,6 @@ const MediaDB = {
       req.onerror = e => reject(e);
     });
   },
-  async getReportsByRecord(recordId) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction('partial_reports', 'readonly');
-      const idx = tx.objectStore('partial_reports').index('record_id');
-      const req = idx.getAll(recordId);
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = e => reject(e);
-    });
-  },
   async removeReport(id) {
     await this.init();
     return new Promise((resolve, reject) => {
@@ -732,20 +701,36 @@ const MediaDB = {
 // ─── Metadata Parser / Helper ────────────────────────────
 function parseRecordMeta(r) {
   let clinic = r.clinic || 'Integrar';
+  let triage = r.triage || 'psicopedagogia';
   let history = r.history || '';
   let meta = {};
   const match = history.match(/<!--PD_META:(.*?)-->/);
   if (match) {
     try { meta = JSON.parse(match[1]); } catch(e) {}
     if (meta.clinic) clinic = meta.clinic;
+    if (meta.triage) triage = meta.triage;
     history = history.replace(/<!--PD_META:.*?-->/, '').trim();
   }
+
+  // Normaliza daily_notes e extrai o campo "Resultado da Sessão" se embutido
+  const dailyNotes = (r.daily_notes || []).map(n => {
+    let content = n.content || '';
+    let result = n.result || '';
+    const rMatch = content.match(/\[RESULTADO\]:\s*(.*)/i);
+    if (rMatch) {
+      result = rMatch[1].trim();
+      content = content.replace(/\[RESULTADO\]:\s*.*$/i, '').trim();
+    }
+    return { ...n, content, result };
+  }).sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+
   return {
     ...r,
     clinic,
+    triage, // 'psicopedagogia' ou 'aba'
     historyDisplay: history,
     interdisciplinary_plan: r.interdisciplinary_plan || meta.interdisciplinary_plan || null,
-    dailyNotes: (r.daily_notes || []).sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+    dailyNotes
   };
 }
 
@@ -777,13 +762,13 @@ async function loadRecords() {
 async function loadPartialReports() {
   try {
     let reports = await MediaDB.getAllReports();
-    // Se estiver vazio pela primeira vez, semeamos o exemplo de Liz Pérola exatamente do screenshot!
     if (!reports || reports.length === 0) {
       const sampleReport = {
         id: 'rep_sample_liz',
         record_id: 'sample_liz',
         patient_name: 'Liz Pérola Theodisio Brito',
         clinic: 'Integrar',
+        triage: 'aba',
         therapist: 'Naianny Maramaldo',
         supervisor: 'Bráulio Roosevelt',
         dateTime: '2026-09-16T09:30',
@@ -812,9 +797,10 @@ async function dbInsertRecord(payload) {
   } catch (err) {
     if (err.message && (err.message.includes('column') || err.code === '42703')) {
       const fallbackPayload = { ...payload };
-      const meta = { clinic: payload.clinic, interdisciplinary_plan: payload.interdisciplinary_plan };
+      const meta = { clinic: payload.clinic, triage: payload.triage, interdisciplinary_plan: payload.interdisciplinary_plan };
       fallbackPayload.history = packRecordMeta(fallbackPayload.history, meta);
       delete fallbackPayload.clinic;
+      delete fallbackPayload.triage;
       delete fallbackPayload.interdisciplinary_plan;
       const { data, error } = await db.from('records').insert([fallbackPayload]).select().single();
       if (error) throw error;
@@ -831,9 +817,10 @@ async function dbUpdateRecord(id, payload) {
   } catch (err) {
     if (err.message && (err.message.includes('column') || err.code === '42703')) {
       const fallbackPayload = { ...payload };
-      const meta = { clinic: payload.clinic, interdisciplinary_plan: payload.interdisciplinary_plan };
+      const meta = { clinic: payload.clinic, triage: payload.triage, interdisciplinary_plan: payload.interdisciplinary_plan };
       fallbackPayload.history = packRecordMeta(fallbackPayload.history, meta);
       delete fallbackPayload.clinic;
+      delete fallbackPayload.triage;
       delete fallbackPayload.interdisciplinary_plan;
       const { error } = await db.from('records').update(fallbackPayload).eq('id', id);
       if (error) throw error;
@@ -849,9 +836,24 @@ async function dbDeleteRecord(id) {
 }
 
 async function dbInsertNote(payload) {
-  const { data, error } = await db.from('daily_notes').insert([payload]).select().single();
-  if (error) throw error;
-  return data;
+  // Salva no banco. Se a coluna 'result' não existir, embute no content
+  try {
+    const { data, error } = await db.from('daily_notes').insert([payload]).select().single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    if (err.message && (err.message.includes('column') || err.code === '42703')) {
+      const fallbackPayload = { ...payload };
+      if (payload.result) {
+        fallbackPayload.content = payload.content + '\n\n[RESULTADO]: ' + payload.result;
+      }
+      delete fallbackPayload.result;
+      const { data, error } = await db.from('daily_notes').insert([fallbackPayload]).select().single();
+      if (error) throw error;
+      return { ...data, result: payload.result };
+    }
+    throw err;
+  }
 }
 
 async function dbDeleteNote(noteId) {
@@ -891,16 +893,18 @@ function toast(msg, type = '') {
   }, 3200);
 }
 
-// ─── Filters ─────────────────────────────────────────────
-function setFilter(cat) {
-  currentFilter = cat;
-  document.querySelectorAll('.filter-tab').forEach(b => {
-    b.classList.remove('active','active-paciente','active-subordinado');
+// ─── Triagem Filter (Psicopedagogia vs ABA) ───────────────
+function setTriageFilter(tri) {
+  triageFilter = tri;
+  ['triage-todos', 'triage-psico', 'triage-aba'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active', 'active-psico', 'active-aba');
   });
-  const btn = document.getElementById(`filter-${cat}`);
-  if (btn) {
-    btn.classList.add('active');
-    if (cat !== 'todos') btn.classList.add(`active-${cat}`);
+  const target = document.getElementById(tri === 'todos' ? 'triage-todos' : tri === 'psicopedagogia' ? 'triage-psico' : 'triage-aba');
+  if (target) {
+    target.classList.add('active');
+    if (tri === 'psicopedagogia') target.classList.add('active-psico');
+    if (tri === 'aba') target.classList.add('active-aba');
   }
   renderList();
 }
@@ -921,11 +925,9 @@ function setClinicFilter(cli) {
 }
 
 // ─── Badge helpers ────────────────────────────────────────
-function badgeClass(cat) {
-  return { paciente: 'badge-paciente', subordinado: 'badge-subordinado' }[cat] || 'badge-paciente';
-}
-function catLabel(cat) {
-  return { paciente: 'Paciente', subordinado: 'Equipe' }[cat] || 'Paciente';
+function triageBadge(triage) {
+  const isAba = String(triage).toLowerCase() === 'aba';
+  return `<span class="badge ${isAba ? 'badge-triage-aba' : 'badge-triage-psico'}">${isAba ? '🧩 ABA' : '🧠 Psico'}</span>`;
 }
 function clinicBadge(clinic) {
   const isMulti = String(clinic).toLowerCase().includes('multi');
@@ -938,12 +940,12 @@ function renderList() {
   const search = (document.getElementById('searchInput').value||'').toLowerCase().trim();
 
   const filtered = records.filter(r => {
-    const matchCat = currentFilter === 'todos' || r.category === currentFilter;
+    const matchTriage = triageFilter === 'todos' || (r.triage || 'psicopedagogia') === triageFilter;
     const matchClinic = clinicFilter === 'todos' || (r.clinic || 'Integrar').toLowerCase() === clinicFilter.toLowerCase();
     const matchSearch = !search ||
       (r.name && r.name.toLowerCase().includes(search)) ||
       (r.institution && r.institution.toLowerCase().includes(search));
-    return matchCat && matchClinic && matchSearch;
+    return matchTriage && matchClinic && matchSearch;
   });
 
   if (!filtered.length) {
@@ -952,7 +954,7 @@ function renderList() {
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <p>Nenhum registro encontrado.<br>Crie um novo cadastro.</p>
+        <p>Nenhum paciente encontrado na triagem.<br>Crie um novo cadastro.</p>
       </div>`;
     return;
   }
@@ -967,15 +969,15 @@ function renderList() {
         <div class="record-card-top">
           <div class="record-card-name">${escHtml(r.name)}</div>
           <div style="display:flex;gap:4px;align-items:center;">
+            ${triageBadge(r.triage)}
             ${clinicBadge(r.clinic)}
-            <span class="badge ${badgeClass(r.category)}">${catLabel(r.category)}</span>
           </div>
         </div>
         <div class="record-card-sub">${escHtml(r.institution||'Sem instituição vinculada')}</div>
         <div class="record-card-meta">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/></svg>
           ${(r.dailyNotes||[]).length} evoluções
-          ${pReps.length > 0 ? `· 📊 ${pReps.length} folha(s) ABA` : ''}
+          ${r.triage === 'aba' && pReps.length > 0 ? `· 📊 ${pReps.length} folha(s)` : ''}
           ${r.interdisciplinary_plan ? '· 📄 Plano' : ''}
         </div>
       </div>
@@ -990,7 +992,7 @@ function selectRecord(id) {
   renderDetail(id);
 }
 
-// ─── Detail Panel ────────────────────────────────────────
+// ─── Detail Panel (TDAH-friendly: Abas limpas conforme Triagem) ────
 function renderDetail(id) {
   const record = records.find(r => r.id===id);
   if (!record) return;
@@ -999,32 +1001,43 @@ function renderDetail(id) {
   const dc = document.getElementById('detailContent');
   dc.style.display = 'flex';
 
+  const isAba = (record.triage === 'aba');
   const notesCount = (record.dailyNotes||[]).length;
   const pRepsCount = partialReports.filter(pr => pr.record_id === record.id).length;
+
+  // Se a aba ativa não for aplicável ao perfil triado, reseta para histórico
+  if (activeTab === 'relatorios' && !isAba) activeTab = 'historico';
+  if (activeTab === 'plano' && isAba && !record.interdisciplinary_plan) activeTab = 'historico';
 
   dc.innerHTML = `
     <div class="detail-tabs">
       <button class="detail-tab ${activeTab==='historico'?'active':''}" onclick="switchTab('historico')">
-        🕒 Histórico &amp; Evolução
+        🕒 Histórico &amp; Sessões
         <span style="margin-left:6px;background:var(--indigo-100);color:var(--indigo-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${notesCount}</span>
       </button>
-      <button class="detail-tab ${activeTab==='relatorios'?'active':''}" onclick="switchTab('relatorios')">
-        📊 Relatórios Parciais (ABA)
-        <span style="margin-left:6px;background:var(--emerald-100);color:var(--emerald-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${pRepsCount}</span>
-      </button>
-      <button class="detail-tab ${activeTab==='plano'?'active':''}" onclick="switchTab('plano')">
-        📄 Plano Interdisciplinar
-        ${record.interdisciplinary_plan ? '<span style="color:#059669;margin-left:4px">●</span>' : ''}
-      </button>
+
+      ${isAba ? `
+        <button class="detail-tab ${activeTab==='relatorios'?'active':''}" onclick="switchTab('relatorios')">
+          📊 Folhas de Registro ABA
+          <span style="margin-left:6px;background:var(--emerald-100);color:var(--emerald-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${pRepsCount}</span>
+        </button>
+      ` : `
+        <button class="detail-tab ${activeTab==='plano'?'active':''}" onclick="switchTab('plano')">
+          📄 Plano Interdisciplinar
+          ${record.interdisciplinary_plan ? '<span style="color:#059669;margin-left:4px">●</span>' : ''}
+        </button>
+      `}
+
       <button class="detail-tab ${activeTab==='prontuario'?'active':''}" onclick="switchTab('prontuario')">
         📋 Prontuário Geral
       </button>
+
       <button class="detail-tab ${activeTab==='anexos'?'active':''}" onclick="switchTab('anexos')">
         📁 Mídias &amp; Anexos
         <span id="attachmentsTabBadge" style="margin-left:6px;background:var(--navy-100);color:var(--navy-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">0</span>
       </button>
     </div>
-    <div id="tabContent" style="flex:1;overflow-y:auto;padding:28px 32px;">
+    <div id="tabContent" style="flex:1;overflow-y:auto;padding:26px 30px;">
       ${renderTabContent(record)}
     </div>
   `;
@@ -1048,94 +1061,159 @@ function renderTabContent(record) {
   return renderProntuarioTab(record);
 }
 
-// ─── Header comum do prontuário ──────────────────────────
+// ─── Header Limpo & Menu TDAH-Friendly (Menos Botões) ─────
 function renderProntuarioHeader(record) {
+  const isAba = (record.triage === 'aba');
   return `
     <div class="prontuario-header">
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
           <h2 class="prontuario-title">${escHtml(record.name)}</h2>
+          ${triageBadge(record.triage)}
           ${clinicBadge(record.clinic)}
-          <span class="badge ${badgeClass(record.category)}">${catLabel(record.category)}</span>
         </div>
         <div class="prontuario-meta">
           ${record.contact    ? `<span>📞 ${escHtml(record.contact)}</span>`     : ''}
           ${record.institution? `<span>🏫 ${escHtml(record.institution)}</span>` : ''}
-          ${record.date       ? `<span>📅 Nasc/Admissão: ${formatDate(record.date)}</span>` : ''}
+          ${record.date       ? `<span>📅 Nasc: ${formatDate(record.date)}</span>` : ''}
           <span style="color:var(--navy-300)">|</span>
           <span>Cadastrado em: ${formatDate(record.created_at, true)}</span>
         </div>
       </div>
+
+      <!-- Ações Focadas: Apenas 1 ou 2 botões principais + Menu discreto de Opções -->
       <div class="action-group">
-        <button class="btn btn-primary btn-sm" onclick="openNewSessionSheet('${record.id}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          + Folha de Sessão ABA
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="openPlanModal('${record.id}')">
-          📄 ${record.interdisciplinary_plan ? 'Editar Plano' : 'Criar Plano'}
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="printReport('${record.id}')">🖨️ Relatório Geral</button>
-        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${record.id}')">✏️ Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${record.id}')">🗑️ Excluir</button>
+        ${isAba ? `
+          <button class="btn btn-primary btn-sm" onclick="openNewSessionSheet('${record.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            + Registrar Sessão ABA
+          </button>
+        ` : `
+          <button class="btn btn-primary btn-sm" onclick="focusNewSessionForm()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            + Registrar Sessão
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openPlanModal('${record.id}')">
+            📄 ${record.interdisciplinary_plan ? 'Editar Plano' : 'Criar Plano'}
+          </button>
+        `}
+
+        <!-- Menu Recolhido para TDAH -->
+        <div class="action-dropdown">
+          <button class="btn btn-ghost btn-sm" onclick="toggleDropdownMenu(event)">
+            ⚙️ Opções ▾
+          </button>
+          <div class="action-dropdown-menu" id="headerDropdownMenu">
+            <button class="action-dropdown-item" onclick="openEditModal('${record.id}')">
+              ✏️ Editar Dados do Paciente
+            </button>
+            <button class="action-dropdown-item" onclick="printReport('${record.id}')">
+              🖨️ Imprimir Relatório Geral
+            </button>
+            ${isAba ? `
+              <button class="action-dropdown-item" onclick="openPlanModal('${record.id}')">
+                📄 Plano Interdisciplinar
+              </button>
+            ` : ''}
+            <button class="action-dropdown-item" onclick="switchTab('anexos')">
+              📁 Ver Anexos e Mídias
+            </button>
+            <button class="action-dropdown-item danger" onclick="deleteRecord('${record.id}')">
+              🗑️ Excluir Prontuário
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `;
 }
 
-// ─── 1. HISTÓRICO & EVOLUÇÃO (LINHA DO TEMPO COMPLETA COM DATA) ─────
+function toggleDropdownMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('headerDropdownMenu');
+  if (m) m.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+  const m = document.getElementById('headerDropdownMenu');
+  if (m) m.classList.remove('open');
+});
+
+function focusNewSessionForm() {
+  switchTab('historico');
+  setTimeout(() => {
+    const input = document.getElementById('timelineNoteContent');
+    if (input) {
+      input.focus();
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 100);
+}
+
+// ─── 1. HISTÓRICO & EVOLUÇÃO COM RESULTADO DA SESSÃO ─────
 function renderHistoricoTab(record) {
   const notes = record.dailyNotes || [];
   const pReps = partialReports.filter(pr => pr.record_id === record.id);
+  const isAba = (record.triage === 'aba');
 
   return `
     ${renderProntuarioHeader(record)}
 
-    <!-- Formulário Rápido de Nova Entrada de Histórico / Evolução -->
-    <div class="note-form" style="background:#fff;border:1px solid var(--indigo-200);box-shadow:var(--shadow-sm);border-radius:var(--radius-lg);padding:20px;margin-bottom:24px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3 style="font-size:15px;font-weight:700;color:var(--indigo-700);display:flex;align-items:center;gap:8px">
-          <span>✍️</span> Registrar Nova Evolução / Atendimento
+    <!-- Formulário Focado de Registro de Sessão com Campo "Resultado da Sessão" -->
+    <div class="note-form" style="background:#fff;border:1px solid var(--indigo-200);box-shadow:var(--shadow-sm);border-radius:var(--radius-lg);padding:18px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:14.5px;font-weight:700;color:var(--indigo-700);display:flex;align-items:center;gap:8px">
+          <span>✍️</span> Registrar Atendimento / Evolução da Sessão
         </h3>
-        <span style="font-size:11px;color:var(--text-muted)">Linha do tempo atualizada imediatamente após salvar</span>
+        <span style="font-size:11px;color:var(--text-muted)">Salva e atualiza imediatamente</span>
       </div>
 
       <div class="form-row form-row-2 form-group">
         <div>
-          <label class="form-label">Data da Sessão / Ocorrência *</label>
+          <label class="form-label">Data da Sessão *</label>
           <input type="date" id="timelineNoteDate" class="form-input" value="${today()}" required>
         </div>
         <div>
-          <label class="form-label">Título / Tipo de Entrada *</label>
-          <input type="text" id="timelineNoteTitle" class="form-input" placeholder="Ex: Sessão Interdisciplinar, Atendimento Fonoaudiológico..." required>
+          <label class="form-label">Título / Tipo de Atendimento *</label>
+          <input type="text" id="timelineNoteTitle" class="form-input" placeholder="Ex: Sessão Psicopedagógica, Treino de Leitura..." value="${isAba ? 'Sessão Comportamental / ABA' : 'Atendimento Psicopedagógico'}" required>
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Descrição Detalhada / Evolução do Paciente *</label>
+        <label class="form-label">O que foi trabalhado &amp; Observações da Sessão</label>
         <textarea id="timelineNoteContent" class="form-textarea" rows="3"
-          placeholder="Descreva condutas adotadas, reações do paciente, habilidades observadas, estratégias pedagógicas e avanços verificados..."></textarea>
+          placeholder="Descreva atividades aplicadas, recursos utilizados, nível de atenção, postura do paciente e condutas adotadas..."></textarea>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px">
+      <!-- NOVO CAMPO SOLICITADO: RESULTADO DA SESSÃO -->
+      <div class="form-group" style="margin-top:10px;">
+        <label class="form-label" style="color:#047857;font-weight:700;display:flex;align-items:center;gap:6px;">
+          <span>🎯</span> Resultado da Sessão *
+        </label>
+        <input type="text" id="timelineNoteResult" class="form-input" style="border-color:#10b981;background:#f0fdf4;"
+          placeholder="Ex: Objetivo atingido com facilidade; concluiu leitura de 3 frases com ajuda mínima; necessita reforço em números..." required>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
         <button type="button" class="btn btn-success" id="timelineAddBtn" onclick="saveTimelineNote('${record.id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-          Salvar Entrada no Histórico
+          Salvar Sessão no Histórico
         </button>
       </div>
     </div>
 
     <!-- Linha do Tempo Cronológica com Datas -->
-    <div class="section-label">Linha do Tempo Cronológica — Histórico Completo</div>
+    <div class="section-label">Histórico das Sessões (Mais recentes primeiro)</div>
 
     <div class="timeline-wrap" id="patientTimeline">
-      ${notes.length === 0 && pReps.length === 0 && !record.interdisciplinary_plan ? `
+      ${notes.length === 0 && pReps.length === 0 ? `
         <div class="empty-state" style="padding:30px 10px;">
           <div style="font-size:32px;margin-bottom:8px">📅</div>
-          <p>Nenhuma entrada de evolução registrada ainda.<br>Preencha o formulário acima para registrar o primeiro atendimento com data.</p>
+          <p>Nenhuma sessão registrada ainda.<br>Preencha o formulário acima para registrar a primeira sessão.</p>
         </div>
       ` : ''}
 
-      <!-- Entradas de Relatórios Parciais / Folha ABA -->
+      <!-- Entradas de Relatórios Parciais / Folha ABA (Se for ABA) -->
       ${pReps.map(rep => `
         <div class="timeline-entry">
           <div class="timeline-dot dot-session" style="border-color:#10b981;color:#10b981">📊</div>
@@ -1164,32 +1242,7 @@ function renderHistoricoTab(record) {
         </div>
       `).join('')}
 
-      <!-- Entrada de Plano Interdisciplinar -->
-      ${record.interdisciplinary_plan ? `
-        <div class="timeline-entry">
-          <div class="timeline-dot dot-plan">📄</div>
-          <div class="timeline-card" style="border-left:4px solid #059669;">
-            <div class="timeline-header">
-              <div class="timeline-title">
-                <span>Plano Interdisciplinar Cadastrado</span>
-                <span class="badge badge-integrar">Plano Vigente</span>
-              </div>
-              <div class="timeline-date-badge">
-                📅 ${record.interdisciplinary_plan.period || 'Período Ativo'}
-              </div>
-            </div>
-            <div class="timeline-body">
-              <strong>Objetivo:</strong> ${escHtml((record.interdisciplinary_plan.generalGoal || '').substring(0, 180))}...
-            </div>
-            <div class="timeline-footer">
-              <span>Profissionais: ${escHtml(record.interdisciplinary_plan.professionals || 'Equipe Interdisciplinar')}</span>
-              <button class="btn btn-ghost btn-xs" onclick="switchTab('plano')">Visualizar Plano Completo →</button>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Entradas de Sessão / Notas -->
+      <!-- Entradas de Sessão com "Resultado da Sessão" destacado -->
       ${notes.map((note, index) => `
         <div class="timeline-entry" id="entry-${note.id}">
           <div class="timeline-dot dot-session">📝</div>
@@ -1207,9 +1260,22 @@ function renderHistoricoTab(record) {
                 </button>
               </div>
             </div>
+
+            <!-- Descrição geral -->
             <div class="timeline-body">${escHtml(note.content)}</div>
+
+            <!-- RESULTADO DA SESSÃO DESTACADO -->
+            ${note.result ? `
+              <div class="session-result-box">
+                <div class="session-result-title">
+                  <span>🎯</span> Resultado da Sessão
+                </div>
+                <div style="font-weight:600;">${escHtml(note.result)}</div>
+              </div>
+            ` : ''}
+
             <div class="timeline-footer">
-              <span>Registro de Sessão / Evolução</span>
+              <span>Sessão Registrada</span>
               <span>Registrado em: ${formatDate(note.created_at || note.date, true)}</span>
             </div>
           </div>
@@ -1222,14 +1288,14 @@ function renderHistoricoTab(record) {
         <div class="timeline-card" style="background:var(--navy-50);">
           <div class="timeline-header">
             <div class="timeline-title" style="font-size:13px;color:var(--navy-700)">
-              Abertura de Prontuário Clínico
+              Abertura do Prontuário
             </div>
             <div class="timeline-date-badge">
               📅 ${formatDate(record.created_at, true)}
             </div>
           </div>
           <div class="timeline-body" style="font-size:12.5px;color:var(--navy-600)">
-            Prontuário criado na unidade <strong>${escHtml(record.clinic || 'Integrar')}</strong> como <strong>${catLabel(record.category)}</strong>.
+            Triado na área <strong>${record.triage === 'aba' ? '🧩 ABA' : '🧠 Psicopedagogia'}</strong> — Unidade <strong>${escHtml(record.clinic || 'Integrar')}</strong>.
           </div>
         </div>
       </div>
@@ -1237,44 +1303,58 @@ function renderHistoricoTab(record) {
   `;
 }
 
-// ─── Salvar Nota pela Linha do Tempo com Atualização Instantânea ───
+// ─── Salvar Sessão com Campo "Resultado da Sessão" ────────
 async function saveTimelineNote(recordId) {
   const dateInput    = document.getElementById('timelineNoteDate');
   const titleInput   = document.getElementById('timelineNoteTitle');
   const contentInput = document.getElementById('timelineNoteContent');
+  const resultInput  = document.getElementById('timelineNoteResult');
   const btn          = document.getElementById('timelineAddBtn');
 
   const date    = dateInput.value;
-  const title   = titleInput.value.trim() || 'Sessão / Evolução';
+  const title   = titleInput.value.trim() || 'Atendimento Realizado';
   const content = contentInput.value.trim();
+  const result  = resultInput.value.trim();
 
-  if (!content) {
-    toast('Por favor, informe a descrição da evolução.', 'error');
-    contentInput.focus();
+  if (!result && !content) {
+    toast('Por favor, informe o Resultado da Sessão.', 'error');
+    resultInput.focus();
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = 'Salvando entrada...';
+  btn.textContent = 'Salvando sessão...';
 
   try {
-    const newNote = await dbInsertNote({ record_id: recordId, date, title, content });
+    const newNote = await dbInsertNote({
+      record_id: recordId,
+      date,
+      title,
+      content: content || 'Atendimento realizado.',
+      result: result || 'Sessão concluída com sucesso.'
+    });
+
     const rec = records.find(r => r.id === recordId);
     if (rec) {
       if (!rec.dailyNotes) rec.dailyNotes = [];
-      rec.dailyNotes.unshift(newNote);
+      rec.dailyNotes.unshift({
+        ...newNote,
+        content: content || 'Atendimento realizado.',
+        result: result || 'Sessão concluída com sucesso.'
+      });
     }
-    toast('Evolução registrada e histórico atualizado!', 'success');
+
+    toast('Sessão e resultado registrados com sucesso!', 'success');
     renderList();
     renderDetail(recordId);
   } catch (e) {
-    toast('Erro ao salvar evolução: ' + e.message, 'error');
+    toast('Erro ao salvar sessão: ' + e.message, 'error');
     btn.disabled = false;
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Salvar Entrada no Histórico';
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Salvar Sessão no Histórico';
   }
 }
 
-// ─── 2. ABA DE RELATÓRIOS PARCIAIS DO PACIENTE ───────────
+// ─── 2. ABA DE RELATÓRIOS PARCIAIS DO PACIENTE (ABA) ──────
 function renderRelatoriosTab(record) {
   const pReps = partialReports.filter(pr => pr.record_id === record.id);
   const avgRI = pReps.length ? Math.round(pReps.reduce((acc, r) => acc + (r.totals ? r.totals.riPct : 0), 0) / pReps.length) : 0;
@@ -1284,8 +1364,8 @@ function renderRelatoriosTab(record) {
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
-        <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Relatórios Parciais de Desempenho Clínico (ABA)</h3>
-        <p style="font-size:12px;color:var(--text-muted)">Folhas de registro de sessão com matriz de tentativas e métricas quantitativas de resposta</p>
+        <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Folhas de Registro de Sessão (ABA)</h3>
+        <p style="font-size:12px;color:var(--text-muted)">Acompanhamento de tentativas e respostas independentes (RI)</p>
       </div>
       <button class="btn btn-primary" onclick="openNewSessionSheet('${record.id}')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -1304,20 +1384,16 @@ function renderRelatoriosTab(record) {
         <div style="font-size:24px;font-weight:800;color:#059669;margin-top:2px">${avgRI}%</div>
       </div>
       <div style="background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-md);padding:14px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Plano Interdisciplinar</div>
-        <div style="font-size:13px;font-weight:700;color:var(--navy-800);margin-top:8px">${record.interdisciplinary_plan ? '✅ Ativo e Estruturado' : '⚠️ Não criado'}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Triagem do Paciente</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy-800);margin-top:8px">🧩 Terapia ABA</div>
       </div>
     </div>
 
-    <!-- Tabela de Folhas de Sessão do Paciente -->
     ${pReps.length === 0 ? `
       <div class="info-card" style="text-align:center;padding:40px 20px;">
         <div style="font-size:36px;margin-bottom:12px">📋</div>
-        <h4 style="font-size:16px;color:var(--navy-800);margin-bottom:8px">Nenhuma folha de registro cadastrada para este paciente</h4>
-        <p style="font-size:13px;color:var(--text-muted);max-width:440px;margin:0 auto 18px;">
-          Após a criação do plano, registre os desempenhos de cada atendimento na Folha de Registro de Sessão.
-        </p>
-        <button class="btn btn-primary btn-sm" onclick="openNewSessionSheet('${record.id}')">
+        <h4 style="font-size:16px;color:var(--navy-800);margin-bottom:8px">Nenhuma folha de registro cadastrada ainda</h4>
+        <button class="btn btn-primary btn-sm" onclick="openNewSessionSheet('${record.id}')" style="margin-top:10px;">
           + Criar Primeira Folha de Registro
         </button>
       </div>
@@ -1380,7 +1456,7 @@ function renderProntuarioTab(record) {
     </div>
 
     <div class="section">
-      <div class="section-label">2 &amp; 3. Plano de Intervenção Psicopedagógica</div>
+      <div class="section-label">2. Objetivos &amp; Recursos</div>
       <div class="plan-grid">
         <div class="plan-card plan-card-objectives">
           <div class="plan-card-label">
@@ -1398,20 +1474,10 @@ function renderProntuarioTab(record) {
         </div>
       </div>
     </div>
-
-    <div class="section">
-      <div class="section-label">Atalhos Rápidos</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="switchTab('historico')">🕒 Ver Histórico e Evoluções →</button>
-        <button class="btn btn-ghost" onclick="switchTab('relatorios')">📊 Ver Relatórios Parciais ABA →</button>
-        <button class="btn btn-ghost" onclick="switchTab('plano')">📄 Ver Plano Interdisciplinar →</button>
-        <button class="btn btn-ghost" onclick="switchTab('anexos')">📁 Gerenciar Mídias e Anexos →</button>
-      </div>
-    </div>
   `;
 }
 
-// ─── 4. PLANO INTERDISCIPLINAR (VISUALIZAÇÃO & PDF) ───────
+// ─── 4. PLANO INTERDISCIPLINAR (METAS MÊS A MÊS + ORIENTAÇÃO FAMÍLIA) ─────
 function renderPlanoTab(record) {
   const plan = record.interdisciplinary_plan;
   return `
@@ -1420,11 +1486,11 @@ function renderPlanoTab(record) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Plano Interdisciplinar do Paciente</h3>
-        <p style="font-size:12px;color:var(--text-muted)">Plano compacto de intervenção integrada pronto para impressão e exportação em PDF</p>
+        <p style="font-size:12px;color:var(--text-muted)">Plano estruturado com metas mês a mês e orientação familiar</p>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-ghost btn-sm" onclick="openPlanModal('${record.id}')">
-          ✏️ ${plan ? 'Editar Plano' : 'Criar Plano Agora'}
+          ✏️ ${plan ? 'Editar Plano' : 'Criar Plano'}
         </button>
         <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -1436,9 +1502,9 @@ function renderPlanoTab(record) {
     ${!plan ? `
       <div class="info-card" style="text-align:center;padding:40px 20px;">
         <div style="font-size:36px;margin-bottom:12px">📄</div>
-        <h4 style="font-size:16px;color:var(--navy-800);margin-bottom:8px">Nenhum Plano Interdisciplinar estruturado ainda</h4>
+        <h4 style="font-size:16px;color:var(--navy-800);margin-bottom:8px">Nenhum Plano Interdisciplinar criado ainda</h4>
         <p style="font-size:13px;color:var(--text-muted);max-width:480px;margin:0 auto 20px;">
-          Crie um plano completo de 3 páginas para o paciente com apenas um clique utilizando nosso modelo de alta fidelidade (igual ou superior ao modelo de referência).
+          Crie o plano em 1 clique com metas mês a mês simplificadas e orientações familiares.
         </p>
         <button class="btn btn-primary" onclick="openPlanModal('${record.id}')">
           ⚡ Criar Plano com Modelo Sugerido
@@ -1449,7 +1515,7 @@ function renderPlanoTab(record) {
         <div style="display:flex;justify-content:space-between;border-bottom:2px solid var(--border-light);padding-bottom:14px;margin-bottom:16px;">
           <div>
             <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--emerald-600);font-weight:700">Clínica ${escHtml(record.clinic || 'Integrar')}</span>
-            <h4 style="font-size:17px;font-weight:800;color:var(--navy-900);margin-top:2px">Plano Compacto de Intervenção Integrada</h4>
+            <h4 style="font-size:17px;font-weight:800;color:var(--navy-900);margin-top:2px">Plano de Intervenção Integrada</h4>
           </div>
           <div style="text-align:right;font-size:11px;color:var(--text-muted)">
             <div>Período: <strong>${escHtml(plan.period || 'Vigente')}</strong></div>
@@ -1465,6 +1531,20 @@ function renderPlanoTab(record) {
         <div style="margin-bottom:16px;background:#f0fdf4;border-left:3px solid #059669;padding:12px 14px;border-radius:4px;">
           <strong style="font-size:12px;color:#047857;text-transform:uppercase">Objetivo Geral:</strong>
           <p style="font-size:12.5px;color:var(--navy-900);margin-top:4px;line-height:1.5">${escHtml(plan.generalGoal || '')}</p>
+        </div>
+
+        <!-- Metas Mês a Mês -->
+        <div style="margin-bottom:16px;">
+          <strong style="font-size:12px;text-transform:uppercase;color:var(--navy-700)">Metas Mês a Mês:</strong>
+          <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
+            <p style="font-size:12.5px;white-space:pre-line;line-height:1.6;color:var(--navy-800);">${escHtml(plan.monthlyGoals || 'Sem metas definidas.')}</p>
+          </div>
+        </div>
+
+        <!-- Orientação Familiar -->
+        <div style="margin-bottom:16px;background:#fffbeb;border:1px solid #fde047;border-radius:6px;padding:12px 14px;">
+          <strong style="font-size:12px;color:#854d0e;text-transform:uppercase;">Orientação e Observação para a Família:</strong>
+          <p style="font-size:12.5px;color:#1e293b;margin-top:4px;line-height:1.5;">${escHtml(plan.familyBrief || '')}</p>
         </div>
 
         <div style="margin-top:20px;display:flex;justify-content:flex-end">
@@ -1486,11 +1566,10 @@ function renderAnexosTab(record) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div>
         <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Mídias &amp; Anexos do Paciente</h3>
-        <p style="font-size:12px;color:var(--text-muted)">Fotos de atividades, vídeos, áudios de atendimentos, laudos e documentos em PDF</p>
+        <p style="font-size:12px;color:var(--text-muted)">Fotos de atividades, vídeos, áudios e laudos em PDF</p>
       </div>
     </div>
 
-    <!-- Upload Dropzone -->
     <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()"
          ondragover="event.preventDefault(); this.classList.add('dragover');"
          ondragleave="this.classList.remove('dragover');"
@@ -1501,15 +1580,11 @@ function renderAnexosTab(record) {
         <line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
       <div style="font-size:13.5px;font-weight:700;color:var(--indigo-700)">
-        Arraste arquivos aqui ou clique para selecionar
-      </div>
-      <div style="font-size:11.5px;color:var(--navy-500);margin-top:4px">
-        Suporta Imagens (PNG, JPG), Documentos &amp; Laudos (PDF), Gravações de Áudio (MP3, WAV) e Vídeos
+        Clique ou arraste arquivos para anexar
       </div>
       <input type="file" id="fileInput" style="display:none" multiple onchange="handleFileInput(event, '${record.id}')">
     </div>
 
-    <!-- Grid de Anexos -->
     <div class="attachments-grid" id="attachmentsGrid">
       <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted)">
         Carregando anexos...
@@ -1530,7 +1605,7 @@ async function loadAttachmentsList(recordId) {
       container.innerHTML = `
         <div class="empty-state" style="grid-column:1/-1;padding:40px 10px;">
           <div style="font-size:32px;margin-bottom:8px">📎</div>
-          <p>Nenhum anexo adicionado ainda.<br>Arraste fotos, laudos ou gravações na área acima.</p>
+          <p>Nenhum anexo adicionado ainda.</p>
         </div>
       `;
       return;
@@ -1570,16 +1645,10 @@ async function loadAttachmentsList(recordId) {
                 <span>${formatDate(f.date)}</span>
               </div>
             </div>
-            ${isAudio ? `
-              <audio controls src="${f.dataUrl}" style="width:100%;height:28px;margin-top:6px;"></audio>
-            ` : ''}
+            ${isAudio ? `<audio controls src="${f.dataUrl}" style="width:100%;height:28px;margin-top:6px;"></audio>` : ''}
             <div class="attachment-actions">
-              <button class="btn btn-ghost btn-xs" style="flex:1" onclick="downloadAttachment('${f.id}')">
-                ⬇️ Baixar
-              </button>
-              <button class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="removeAttachment('${f.id}', '${recordId}')">
-                🗑️
-              </button>
+              <button class="btn btn-ghost btn-xs" style="flex:1" onclick="downloadAttachment('${f.id}')">⬇️ Baixar</button>
+              <button class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="removeAttachment('${f.id}', '${recordId}')">🗑️</button>
             </div>
           </div>
         </div>
@@ -1621,7 +1690,7 @@ async function processFiles(files, recordId) {
     };
     await MediaDB.add(item);
   }
-  toast('Anexo(s) incluído(s) com sucesso!', 'success');
+  toast('Anexo incluído com sucesso!', 'success');
   loadAttachmentsList(recordId);
 }
 
@@ -1674,14 +1743,13 @@ function closeLightbox(e) {
   }
 }
 
-// ─── 6. DASHBOARD DE RELATÓRIOS PARCIAIS (Screenshot 1) ───────
+// ─── 6. DASHBOARD DE RELATÓRIOS PARCIAIS ─────────────────
 function openReportsDashboard() {
   const modal = document.getElementById('modalReportsDashboard');
   const sel = document.getElementById('reportFilterPatient');
 
-  // Popula seletor de pacientes
   sel.innerHTML = `<option value="all">✨ Todos os Pacientes (Visão Geral de Planos ABA)</option>` +
-    records.map(r => `<option value="${r.id}">${escHtml(r.name)} (${r.clinic||'Integrar'})</option>`).join('');
+    records.map(r => `<option value="${r.id}">${escHtml(r.name)} (${r.triage==='aba'?'🧩 ABA':'🧠 Psico'})</option>`).join('');
 
   if (activeRecordId) sel.value = activeRecordId;
 
@@ -1704,7 +1772,6 @@ function renderReportsDashboard() {
     return matchPatient && matchDate;
   });
 
-  // Métricas
   const totalPlans = filtered.length;
   const distinctPatients = new Set(filtered.map(r => r.record_id || r.patient_name)).size;
   const avgRI = totalPlans ? Math.round(filtered.reduce((acc, r) => acc + (r.totals ? r.totals.riPct : 0), 0) / totalPlans) : 0;
@@ -1753,7 +1820,7 @@ function renderReportsDashboard() {
   }).join('');
 }
 
-// ─── 7. FOLHA DE REGISTRO DE SESSÃO (Screenshot 2) ─────────
+// ─── 7. FOLHA DE REGISTRO DE SESSÃO ABA ───────────────────
 function openNewSessionSheet(targetPatientId) {
   editingReportId = null;
   const pId = targetPatientId || activeRecordId || (records[0] ? records[0].id : '');
@@ -1762,7 +1829,6 @@ function openNewSessionSheet(targetPatientId) {
   document.getElementById('sheetReportId').value = '';
   document.getElementById('sheetRecordId').value = pId || '';
 
-  // Popula select de pacientes
   const sel = document.getElementById('sheetPatientSelect');
   sel.innerHTML = records.map(x => `<option value="${x.id}" ${x.id===pId?'selected':''}>${escHtml(x.name)} (${x.clinic||'Integrar'})</option>`).join('');
 
@@ -1772,7 +1838,6 @@ function openNewSessionSheet(targetPatientId) {
   document.getElementById('sheetPreferences').value = 'Nenhum cadastrado';
   document.getElementById('sheetMedicalObs').value = 'Nenhuma';
 
-  // Carrega 14 programas por padrão
   renderSheetProgramsTable(JSON.parse(JSON.stringify(DEFAULT_ABA_PROGRAMS)));
   recalculateSheetTotals();
 
@@ -1816,7 +1881,7 @@ function onSheetPatientChange(patientId) {
 function loadDefaultAbaPrograms() {
   renderSheetProgramsTable(JSON.parse(JSON.stringify(DEFAULT_ABA_PROGRAMS)));
   recalculateSheetTotals();
-  toast('14 programas padrão carregados com sucesso!', 'success');
+  toast('14 programas padrão carregados!', 'success');
 }
 
 function renderSheetProgramsTable(programs) {
@@ -1827,7 +1892,6 @@ function renderSheetProgramsTable(programs) {
     const tr = document.createElement('tr');
     tr.dataset.progIdx = idx;
 
-    // Colunas de tentativas 1 a 12
     const attemptsCells = Array.from({ length: 12 }).map((_, i) => {
       const val = (p.trials && p.trials[i]) || '';
       const stateClass = val === 'RI' ? 'state-ri' : val === 'AP' ? 'state-ap' : val === 'AT' ? 'state-at' : val === 'E' ? 'state-e' : 'state-none';
@@ -1883,7 +1947,6 @@ function addCustomSheetRow() {
   tbody.appendChild(tr);
 }
 
-// Alterna estado da tentativa com 1 clique (RI -> AP -> AT -> E -> —)
 function cycleAttemptState(btn) {
   const cur = btn.textContent.trim();
   let next = 'RI';
@@ -1947,6 +2010,7 @@ function collectSheetData() {
   const patient = records.find(r => r.id === patientId);
   const patientName = patient ? patient.name : 'Paciente';
   const clinic = patient ? patient.clinic : 'Integrar';
+  const triage = patient ? patient.triage : 'aba';
 
   const dateTime = document.getElementById('sheetDateTime').value;
   const [date, time] = dateTime.split('T');
@@ -1977,6 +2041,7 @@ function collectSheetData() {
     record_id: patientId,
     patient_name: patientName,
     clinic: clinic,
+    triage: triage,
     therapist: document.getElementById('sheetTherapist').value.trim(),
     supervisor: document.getElementById('sheetSupervisor').value.trim(),
     dateTime: dateTime,
@@ -2000,7 +2065,6 @@ async function saveSessionSheet(e) {
     const reportData = collectSheetData();
     await MediaDB.saveReport(reportData);
 
-    // Atualiza cache local
     const existingIdx = partialReports.findIndex(r => r.id === reportData.id);
     if (existingIdx !== -1) {
       partialReports[existingIdx] = reportData;
@@ -2008,17 +2072,16 @@ async function saveSessionSheet(e) {
       partialReports.unshift(reportData);
     }
 
-    toast('Folha de Registro de Sessão salva com sucesso!', 'success');
+    toast('Folha de Registro salva com sucesso!', 'success');
     closeSessionSheet();
     renderList();
 
-    // Se estiver no detalhe do paciente, atualiza
     if (activeRecordId) renderDetail(activeRecordId);
     if (document.getElementById('modalReportsDashboard').classList.contains('open')) {
       renderReportsDashboard();
     }
   } catch (err) {
-    toast('Erro ao salvar folha de sessão: ' + err.message, 'error');
+    toast('Erro ao salvar folha: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = '💾 Salvar Folha de Sessão';
@@ -2026,11 +2089,11 @@ async function saveSessionSheet(e) {
 }
 
 async function deletePartialReport(reportId, patientId) {
-  if (!confirm('Excluir este relatório parcial de sessão permanentemente?')) return;
+  if (!confirm('Excluir esta folha de registro permanentemente?')) return;
   try {
     await MediaDB.removeReport(reportId);
     partialReports = partialReports.filter(r => r.id !== reportId);
-    toast('Relatório excluído.', 'success');
+    toast('Folha de registro excluída.', 'success');
     renderList();
     if (patientId) renderDetail(patientId);
     if (document.getElementById('modalReportsDashboard').classList.contains('open')) {
@@ -2041,7 +2104,7 @@ async function deletePartialReport(reportId, patientId) {
   }
 }
 
-// ─── 8. IMPRESSÃO DA FOLHA DE REGISTRO DE SESSÃO ABA (Screenshot 2) ───
+// ─── 8. IMPRESSÃO DA FOLHA DE REGISTRO DE SESSÃO ABA ──────
 function printCurrentSessionSheet() {
   const reportData = collectSheetData();
   renderPrintSessionSheet(reportData);
@@ -2071,7 +2134,6 @@ function renderPrintSessionSheet(data) {
         </div>
       </div>
 
-      <!-- Informações do Paciente -->
       <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:9pt;">
         <tr>
           <td style="padding:4px 0;width:50%;">
@@ -2093,21 +2155,8 @@ function renderPrintSessionSheet(data) {
             <div style="font-size:10pt;font-weight:700;color:#334155;">${formatDate(data.date)} ${data.time||'09:30'}</div>
           </td>
         </tr>
-        <tr>
-          <td style="padding:4px 0;" colspan="2">
-            <div style="font-size:8pt;color:#64748b;text-transform:uppercase;font-weight:700">ITENS / ATIVIDADES DE PREFERÊNCIA</div>
-            <div style="font-size:9pt;color:#334155;">${escHtml(data.preferences || 'Nenhum cadastrado')}</div>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:4px 0;" colspan="2">
-            <div style="font-size:8pt;color:#64748b;text-transform:uppercase;font-weight:700">OBSERVAÇÕES MÉDICAS / MEDICAMENTOS</div>
-            <div style="font-size:9pt;color:#334155;">${escHtml(data.medicalObs || 'Nenhuma')}</div>
-          </td>
-        </tr>
       </table>
 
-      <!-- Matriz de Avaliação -->
       <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:12px;">
         <thead>
           <tr>
@@ -2143,7 +2192,6 @@ function renderPrintSessionSheet(data) {
         </tbody>
       </table>
 
-      <!-- Cards de Desempenho -->
       <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-top:10px;margin-bottom:24px;">
         <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:4px;padding:8px 10px;text-align:center;">
           <div style="font-size:8pt;font-weight:800;color:#15803d;text-transform:uppercase;">RESPOSTA INDEPENDENTE (RI)</div>
@@ -2163,7 +2211,6 @@ function renderPrintSessionSheet(data) {
         </div>
       </div>
 
-      <!-- Assinaturas -->
       <div style="display:flex;justify-content:space-around;margin-top:30px;padding-top:10px;">
         <div style="text-align:center;width:240px;border-top:1.5px solid #0f172a;padding-top:6px;font-size:9pt;color:#334155;">
           ${escHtml(data.therapist || 'Terapeuta Responsável')}<br>
@@ -2183,68 +2230,32 @@ function renderPrintSessionSheet(data) {
   }, 150);
 }
 
-// ─── 9. CRIADOR DE PLANO INTERDISCIPLINAR ────────────────
+// ─── 9. CRIADOR DE PLANO (METAS APENAS MÊS A MÊS) ─────────
 const SUGGESTED_PLAN_BENCHMARK = {
   professionals: "Leandro Moraes - Fonoaudiólogo\nGabriela Martins - Psicopedagoga Comportamental",
   frequency: "Cada profissional: 1 atendimento semanal de 60 minutos",
-  period: "Setembro a dezembro de 2026 - flexível conforme a evolução, podendo ser ajustado pela equipe",
-  generalGoal: "Promover o desenvolvimento integrado nas áreas de linguagem, consciência fonológica, leitura, escrita, matemática, organização temporal, interação social, brincar e autonomia, ampliando respostas mais completas e independentes nas situações de aprendizagem e da vida diária.",
-  specificGoals: "• Ampliar a consciência fonológica, relacionando sons da fala às letras e às sílabas.\n• Avançar da leitura silábica para a leitura de palavras e frases curtas com maior compreensão.\n• Escrever o nome completo e palavras simples com redução gradual das ajudas.\n• Consolidar o reconhecimento, a sequência e o uso funcional dos números de 1 a 10.\n• Desenvolver noções de tempo: rotina, dias da semana e reconhecimento inicial de horas.\n• Ampliar o repertório de respostas, a intenção comunicativa e a interação social.\n• Expandir o brincar funcional para situações imaginativas, criativas e compartilhadas.\n• Fortalecer habilidades de autonomia em pequenas tarefas e rotinas.",
-  sharedGuidance: "Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas. Registrar respostas independentes, respostas com ajuda e habilidades que já aparecem em mais de um ambiente.",
+  period: "Setembro a dezembro de 2026 - flexível conforme a evolução",
+  generalGoal: "Promover o desenvolvimento integrado nas áreas de linguagem, consciência fonológica, leitura, escrita, matemática, organização temporal, interação social e autonomia.",
+  specificGoals: "• Ampliar a consciência fonológica, relacionando sons da fala às letras e sílabas.\n• Avançar da leitura silábica para a leitura de palavras e frases curtas com maior compreensão.\n• Escrever o nome completo e palavras simples com redução gradual das ajudas.\n• Consolidar o reconhecimento, a sequência e o uso funcional dos números de 1 a 10.\n• Desenvolver noções de tempo: rotina, dias da semana e reconhecimento de horas.\n• Fortalecer habilidades de autonomia em pequenas tarefas e rotinas.",
+  sharedGuidance: "Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas.",
   tableRows: [
-    {
-      target: "Consciência fonológica e relação som-letra",
-      strategies: "Realizar jogos de rimas, aliteração, identificação do som inicial e final, segmentação de palavras em sílabas e união de sons. Relacionar fonema e grafema com figuras, letras móveis, pistas visuais e produção oral.",
-      results: "Reconhece e manipula sons com maior precisão; associa sons às letras; identifica sílabas e forma palavras com menos ajuda."
-    },
-    {
-      target: "Leitura e compreensão",
-      strategies: "Trabalhar leitura compartilhada, leitura em eco e releitura de palavras, frases e textos muito curtos. Explorar quem, o quê, onde e quando, utilizando imagens e perguntas objetivas antes de avançar para respostas mais abertas.",
-      results: "Lê com menor dependência da silabação, compreende informações simples e responde com frases progressivamente mais completas."
-    },
-    {
-      target: "Escrita e nome completo",
-      strategies: "Usar letras móveis, modelo visual, cópia próxima, completamento de letras ausentes, ditado apoiado e escrita espontânea. Treinar o nome completo em situações funcionais e retirar o modelo por etapas.",
-      results: "Escreve o nome completo corretamente e registra palavras simples com melhor correspondência entre sons e letras."
-    },
-    {
-      target: "Números de 1 a 10",
-      strategies: "Associar numeral e quantidade com materiais concretos, contagem de objetos, pareamento, sequência, jogos de trilha e pequenas situações do cotidiano. Alternar reconhecimento, ordenação e registro.",
-      results: "Reconhece, ordena, conta e representa quantidades de 1 a 10 sem depender de repetição ou conferência constante."
-    },
-    {
-      target: "Noção de tempo",
-      strategies: "Utilizar calendário, rotina visual e sequência de acontecimentos. Ensinar hoje, ontem e amanhã; dias da semana; manhã, tarde e noite; e reconhecimento inicial de horas cheias em relógio analógico e digital.",
-      results: "Organiza acontecimentos em sequência, identifica os dias da semana e relaciona horários simples às atividades da rotina."
-    },
-    {
-      target: "Linguagem e interação social",
-      strategies: "Ampliar perguntas e respostas por meio de descrição de imagens, relatos de experiências e conversas dirigidas. Criar oportunidades para iniciar interação, manter assunto, pedir ajuda, escolher e comentar.",
-      results: "Responde de forma mais elaborada, inicia trocas comunicativas e sustenta interação por mais turnos com adultos e pares."
-    },
-    {
-      target: "Brincar imaginativo e criativo",
-      strategies: "Partir do brincar funcional para cenas de casa, escola, mercado e consultório. Ensinar sequência de ações, troca de papéis, fala de personagens, criação de um problema simples e final da história.",
-      results: "Cria e mantém pequenos roteiros, aceita ideias do outro, varia ações e participa de brincadeiras simbólicas com menor ajuda."
-    },
-    {
-      target: "Autonomia",
-      strategies: "Dividir tarefas em passos visuais: organizar materiais, iniciar e concluir atividade, guardar objetos, escolher entre opções e solicitar ajuda somente quando necessário. Reforçar tentativas independentes.",
-      results: "Realiza pequenas rotinas com menos prompts, organiza seus materiais e demonstra maior iniciativa e segurança."
-    }
+    { target: "Consciência fonológica", strategies: "Jogos de rimas, aliteração e segmentação silábica.", results: "Reconhece e manipula sons com maior precisão." },
+    { target: "Leitura e compreensão", strategies: "Leitura compartilhada, leitura em eco e textos curtos.", results: "Lê com menor silabação e maior compreensão." },
+    { target: "Escrita e nome completo", strategies: "Letras móveis, modelo visual e escrita espontânea.", results: "Escreve o nome completo com autonomia." },
+    { target: "Números e contagem", strategies: "Materiais concretos, pareamento e trilhas.", results: "Reconhece e representa quantidades de 1 a 10." },
+    { target: "Autonomia na rotina", strategies: "Rotina visual por etapas e reforço positivo.", results: "Organiza materiais e conclui pequenas tarefas com segurança." }
   ],
-  commonCriteria: "A habilidade será considerada em progresso quando o paciente realizá-la com menos ajuda e maior constância. Será considerada consolidada quando ocorrer com diferentes pessoas e em pelo menos duas atividades ou ambientes.",
-  monthlyGoals: "Setembro | Realizar linha de base; identificar preferências e níveis atuais; iniciar rotina visual, escrita do nome, relação som-letra, números de 1 a 10 e respostas ampliadas.\nOutubro | Fortalecer consciência silábica, leitura de palavras e frases, escrita com apoio reduzido, sequência numérica, dias da semana, interação dirigida e roteiros simples de brincar.\nNovembro | Aumentar independência e variar materiais e parceiros; trabalhar pequenos textos, escrita espontânea, situações funcionais com números e horas, relatos pessoais e brincadeiras com papéis.\nDezembro | Generalizar habilidades, reduzir pistas, comparar registros, orientar a família e definir as próximas metas conforme os resultados alcançados.",
-  progressionRules: "• Avançar quando apresentar cerca de 80% de respostas adequadas em 2 a 3 sessões, com ajuda mínima.\n• Quando houver dificuldade persistente, reduzir uma dimensão da tarefa, oferecer ajuda suficiente e revisar os pré-requisitos.\n• Aumentar apenas uma variável por vez: quantidade de itens, extensão da leitura, nível de abstração ou independência.\n• O calendário é orientador e poderá ser ajustado conforme os dados, o ritmo de aprendizagem e o bem-estar do paciente.",
-  familyBrief: "Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço, oferecer tempo para o paciente responder e evitar antecipar todas as respostas.",
-  familyGuidelines: "Leitura | Ler histórias curtas, pedir que localize letras, sílabas ou palavras conhecidas e fazer uma ou duas perguntas objetivas sobre a história.\nEscrita | Estimular a assinatura do nome completo em desenhos e atividades, oferecendo modelo apenas quando necessário e retirando-o gradualmente.\nTempo e números | Usar calendário e relógio na rotina: marcar o dia, contar objetos, escolher quantidades e relacionar horas cheias a atividades conhecidas.\nComunicação | Dar tempo para responder; pedir que conte com começo, meio e fim; ampliar a fala da criança sem corrigir de forma rígida.\nBrincar e autonomia | Criar brincadeiras de faz de conta, alternar papéis e permitir que organize e guarde seus materiais seguindo poucos passos de cada vez."
+  commonCriteria: "A habilidade será considerada em progresso quando realizá-la com menos ajuda e constância. Consolidada quando ocorrer em pelo menos dois ambientes distintos.",
+  monthlyGoals: "Mês 1 (Setembro) | Realizar linha de base; identificar preferências; iniciar rotina visual e relação som-letra.\nMês 2 (Outubro) | Fortalecer consciência silábica, leitura de palavras curtas e sequência numérica.\nMês 3 (Novembro) | Aumentar independência na escrita, situações funcionais com horas e pequenos textos.\nMês 4 (Dezembro) | Generalizar habilidades, orientar a família e definir próximos passos.",
+  familyBrief: "Realizar práticas curtas de 5 a 10 minutos inseridas naturalmente na rotina de casa. Valorizar o esforço e oferecer tempo hábil de resposta sem antecipar.",
+  familyGuidelines: "Leitura | Ler histórias curtas e pedir que aponte palavras conhecidas.\nEscrita | Estimular a assinatura do nome em desenhos e recados.\nTempo e números | Consultar calendário e relógio nas atividades do dia a dia.\nAutonomia | Incentivar a guardar brinquedos e preparar materiais com poucos passos por vez."
 };
 
 function openPlanModal(recordId) {
   const r = records.find(x => x.id === recordId);
   if (!r) return;
   editingPlan = recordId;
-  document.getElementById('planModalSub').textContent = `Paciente: ${r.name} — Clínica ${r.clinic || 'Integrar'}`;
+  document.getElementById('planModalSub').textContent = `Paciente: ${r.name} — ${r.triage==='aba'?'🧩 ABA':'🧠 Psicopedagogia'}`;
 
   const plan = r.interdisciplinary_plan || SUGGESTED_PLAN_BENCHMARK;
   populatePlanForm(plan, r.name);
@@ -2259,7 +2270,7 @@ function loadSuggestedPlanTemplate() {
   const r = records.find(x => x.id === editingPlan);
   const name = r ? r.name : 'Paciente';
   populatePlanForm(SUGGESTED_PLAN_BENCHMARK, name);
-  toast('Modelo interdisciplinar de alta qualidade carregado!', 'success');
+  toast('Modelo interdisciplinar carregado!', 'success');
 }
 
 function populatePlanForm(plan, patientName) {
@@ -2271,7 +2282,6 @@ function populatePlanForm(plan, patientName) {
   document.getElementById('planSharedGuidance').value= plan.sharedGuidance || '';
   document.getElementById('planCommonCriteria').value= (plan.commonCriteria || '').replace(/\[Nome\]/g, patientName);
   document.getElementById('planMonthlyGoals').value  = plan.monthlyGoals || '';
-  document.getElementById('planProgressionRules').value= plan.progressionRules || '';
   document.getElementById('planFamilyBrief').value   = plan.familyBrief || '';
   document.getElementById('planFamilyGuidelines').value = plan.familyGuidelines || '';
 
@@ -2313,8 +2323,7 @@ function collectPlanData() {
     sharedGuidance: document.getElementById('planSharedGuidance').value.trim(),
     tableRows: rows,
     commonCriteria: document.getElementById('planCommonCriteria').value.trim(),
-    monthlyGoals: document.getElementById('planMonthlyGoals').value.trim(),
-    progressionRules: document.getElementById('planProgressionRules').value.trim(),
+    monthlyGoals: document.getElementById('planMonthlyGoals').value.trim(), // METAS APENAS MÊS A MÊS
     familyBrief: document.getElementById('planFamilyBrief').value.trim(),
     familyGuidelines: document.getElementById('planFamilyGuidelines').value.trim(),
     updatedAt: new Date().toISOString()
@@ -2336,6 +2345,7 @@ async function savePlanData(e) {
       contact: r.contact,
       institution: r.institution,
       clinic: r.clinic,
+      triage: r.triage,
       history: r.historyDisplay || r.history,
       goals: r.goals,
       strategies: r.strategies,
@@ -2353,7 +2363,7 @@ async function savePlanData(e) {
   }
 }
 
-// ─── 10. GERAÇÃO DE PDF DO PLANO INTERDISCIPLINAR ─────────
+// ─── 10. GERAÇÃO DE PDF DO PLANO (METAS MÊS A MÊS) ────────
 function triggerPrintPlan() {
   const recordId = editingPlan || activeRecordId;
   const record = records.find(r => r.id === recordId);
@@ -2411,7 +2421,6 @@ function printInterdisciplinaryPlan(record, plan) {
     const parts = line.split('|');
     return { period: parts[0]?.trim() || '', goal: parts[1]?.trim() || parts[0]?.trim() };
   });
-  const progArray = (plan.progressionRules || '').split('\n').map(s => s.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
   const familyArray = (plan.familyGuidelines || '').split('\n').filter(Boolean).map(line => {
     const parts = line.split('|');
     return { situation: parts[0]?.trim() || '', guideline: parts[1]?.trim() || parts[0]?.trim() };
@@ -2427,7 +2436,7 @@ function printInterdisciplinaryPlan(record, plan) {
           PLANO INTERDISCIPLINAR
         </h1>
         <div style="font-family:Arial,sans-serif;font-size:10.5pt;color:#64748b;margin-top:3px">
-          Plano compacto de intervenção integrada
+          Plano de intervenção integrada
         </div>
       </div>
 
@@ -2438,7 +2447,7 @@ function printInterdisciplinaryPlan(record, plan) {
         <table class="pdf-table">
           <tr>
             <td style="width:25%;font-weight:700;background:#f8fafc;color:#334155;">Paciente</td>
-            <td style="font-weight:700;color:#0f172a;">${escHtml(record.name)}</td>
+            <td style="font-weight:700;color:#0f172a;">${escHtml(record.name)} (${record.triage==='aba'?'Terapia ABA':'Psicopedagogia'})</td>
           </tr>
           <tr>
             <td style="font-weight:700;background:#f8fafc;color:#334155;">Profissionais</td>
@@ -2524,15 +2533,16 @@ function printInterdisciplinaryPlan(record, plan) {
         <span>Página 3</span>
       </div>
 
-      <div style="margin-bottom:16px;">
+      <!-- METAS APENAS MÊS A MÊS -->
+      <div style="margin-bottom:20px;">
         <h2 style="font-family:Arial,sans-serif;font-size:12pt;font-weight:800;color:#1e293b;margin-bottom:8px;">
-          4. Metas e progressão
+          4. Metas Mês a Mês
         </h2>
         <table class="pdf-table">
           <thead>
             <tr>
-              <th style="width:25%;">Período</th>
-              <th style="width:75%;">Meta integrada</th>
+              <th style="width:28%;">Período</th>
+              <th style="width:72%;">Meta do Mês</th>
             </tr>
           </thead>
           <tbody>
@@ -2544,29 +2554,23 @@ function printInterdisciplinaryPlan(record, plan) {
             `).join('')}
           </tbody>
         </table>
-
-        <div style="margin-top:8px;">
-          <div style="font-weight:700;font-size:9.5pt;color:#0f172a;margin-bottom:4px;">Progressão</div>
-          <ul style="margin:4px 0 10px 18px;padding:0;font-size:8.5pt;line-height:1.45;color:#334155;">
-            ${progArray.map(p => `<li style="margin-bottom:3px;">${escHtml(p)}</li>`).join('')}
-          </ul>
-        </div>
       </div>
 
-      <div style="margin-bottom:16px;">
+      <!-- ORIENTAÇÃO E OBSERVAÇÃO PARA FAMÍLIA -->
+      <div style="margin-bottom:20px;">
         <h2 style="font-family:Arial,sans-serif;font-size:12pt;font-weight:800;color:#1e293b;margin-bottom:8px;">
-          5. Orientação à família
+          5. Orientação e Observações para a Família
         </h2>
         <div class="pdf-callout-mint" style="margin-top:0;margin-bottom:10px;">
-          <div style="font-weight:700;font-size:9pt;color:#166534;margin-bottom:2px;">Prática breve e natural</div>
+          <div style="font-weight:700;font-size:9pt;color:#166534;margin-bottom:2px;">Prática no cotidiano familiar</div>
           <div>${escHtml(plan.familyBrief || '')}</div>
         </div>
 
         <table class="pdf-table">
           <thead>
             <tr>
-              <th style="width:25%;">Situação</th>
-              <th style="width:75%;">Conduta familiar</th>
+              <th style="width:28%;">Situação</th>
+              <th style="width:72%;">Conduta Familiar Recomendada</th>
             </tr>
           </thead>
           <tbody>
@@ -2587,20 +2591,19 @@ function printInterdisciplinaryPlan(record, plan) {
         <table class="pdf-table">
           <thead>
             <tr>
-              <th style="width:12%;">Data</th>
-              <th style="width:20%;">Profissional</th>
-              <th style="width:25%;">Habilidade trabalhada</th>
-              <th style="width:25%;">Resultado observado</th>
-              <th style="width:18%;">Próximo ajuste</th>
+              <th style="width:14%;">Data</th>
+              <th style="width:24%;">Profissional</th>
+              <th style="width:32%;">Habilidade trabalhada</th>
+              <th style="width:30%;">Resultado da Sessão</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td><td></td></tr>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td><td></td></tr>
+            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
+            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
+            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
           </tbody>
         </table>
-        <div style="font-size:9pt;color:#475569;margin-top:10px;">
+        <div style="font-size:9pt;color:#475569;margin-top:14px;">
           Revisão da equipe: ____ / ____ / ______
         </div>
       </div>
@@ -2620,6 +2623,7 @@ function openNewModal() {
   document.getElementById('modalTitle').textContent = 'Novo Prontuário';
   document.getElementById('recordForm').reset();
   document.getElementById('recordId').value = '';
+  document.getElementById('recordTriage').value = 'psicopedagogia';
   document.getElementById('recordClinic').value = 'Integrar';
   document.getElementById('saveBtn').textContent = 'Salvar Prontuário';
   document.getElementById('saveBtn').disabled = false;
@@ -2631,8 +2635,8 @@ function openEditModal(id) {
   if (!r) return;
   document.getElementById('modalTitle').textContent = 'Editar Prontuário';
   document.getElementById('recordId').value          = r.id;
+  document.getElementById('recordTriage').value      = r.triage || 'psicopedagogia';
   document.getElementById('recordClinic').value      = r.clinic || 'Integrar';
-  document.getElementById('recordCategory').value    = r.category === 'subordinado' ? 'subordinado' : 'paciente';
   document.getElementById('recordName').value        = r.name;
   document.getElementById('recordBirth').value       = r.date||'';
   document.getElementById('recordContact').value     = r.contact||'';
@@ -2664,8 +2668,8 @@ async function saveRecord(e) {
   btn.textContent = 'Salvando...';
 
   const id          = document.getElementById('recordId').value;
+  const triage      = document.getElementById('recordTriage').value;
   const clinic      = document.getElementById('recordClinic').value;
-  const category    = document.getElementById('recordCategory').value;
   const name        = document.getElementById('recordName').value.trim();
   const date        = document.getElementById('recordBirth').value;
   const contact     = document.getElementById('recordContact').value.trim();
@@ -2676,12 +2680,13 @@ async function saveRecord(e) {
 
   const existingRec = id ? records.find(r => r.id === id) : null;
   const payload = {
-    category,
+    category: 'paciente',
+    triage,
+    clinic,
     name,
     date,
     contact,
     institution,
-    clinic,
     history,
     goals,
     strategies,
@@ -2705,7 +2710,7 @@ async function saveRecord(e) {
       newRec.dailyNotes = [];
       records.unshift(newRec);
       activeRecordId = newRec.id;
-      toast('Prontuário criado!', 'success');
+      toast('Prontuário cadastrado com sucesso!', 'success');
     }
     renderList();
     updateStats();
@@ -2724,7 +2729,7 @@ async function saveRecord(e) {
 async function deleteRecord(id) {
   const rec = records.find(r => r.id===id);
   if (!rec) return;
-  if (!confirm(`Excluir o prontuário de "${rec.name}" e todas as evoluções?\nEsta ação não pode ser desfeita.`)) return;
+  if (!confirm(`Excluir o prontuário de "${rec.name}"?\nEsta ação não pode ser desfeita.`)) return;
   try {
     await dbDeleteRecord(id);
     records = records.filter(r => r.id!==id);
@@ -2741,12 +2746,12 @@ async function deleteRecord(id) {
 
 // ─── Delete Note ─────────────────────────────────────────
 async function deleteNote(recordId, noteId) {
-  if (!confirm('Excluir esta anotação permanentemente?')) return;
+  if (!confirm('Excluir esta sessão permanentemente?')) return;
   try {
     await dbDeleteNote(noteId);
     const rec = records.find(r => r.id===recordId);
     if (rec) rec.dailyNotes = (rec.dailyNotes||[]).filter(n => n.id!==noteId);
-    toast('Anotação removida.', 'success');
+    toast('Sessão removida.', 'success');
     renderDetail(recordId);
     renderList();
   } catch(e) {
@@ -2766,11 +2771,11 @@ function printReport(id) {
       <div style="border-bottom:3px solid #0f172a;padding-bottom:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:4px">Clínica ${escHtml(record.clinic||'Integrar')} — Sistema Pronto Digital</div>
-          <h1 style="font-size:22px;font-weight:800;margin:0;color:#0f172a">Relatório Psicopedagógico Geral</h1>
+          <h1 style="font-size:22px;font-weight:800;margin:0;color:#0f172a">Relatório de Atendimento — ${record.triage==='aba'?'Terapia ABA':'Psicopedagogia'}</h1>
         </div>
         <div style="text-align:right;font-size:11px;color:#64748b">
           <div>Emitido em: <strong>${new Date().toLocaleDateString('pt-BR')}</strong></div>
-          <div>Unidade: <strong>${escHtml(record.clinic||'Integrar')}</strong></div>
+          <div>Área: <strong>${record.triage==='aba'?'ABA':'Psicopedagogia'}</strong></div>
         </div>
       </div>
       <div style="margin-bottom:20px">
@@ -2784,21 +2789,14 @@ function printReport(id) {
         ${record.historyDisplay||record.history?`<div style="margin-top:10px;padding:10px 14px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.historyDisplay||record.history)}</div>`:''}
       </div>
       <div style="margin-bottom:20px">
-        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">2. Objetivos de Desenvolvimento</h2>
-        <div style="padding:10px 14px;background:#eef2ff;border-left:3px solid #4f46e5;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.goals||'Nenhum objetivo registrado.')}</div>
-      </div>
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">3. Estratégias &amp; Condutas</h2>
-        <div style="padding:10px 14px;background:#ecfdf5;border-left:3px solid #059669;border-radius:4px;font-size:12px;white-space:pre-line">${escHtml(record.strategies||'Nenhuma estratégia registrada.')}</div>
-      </div>
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">4. Histórico de Evoluções &amp; Sessões</h2>
+        <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px;color:#334155">2. Histórico de Sessões e Resultados</h2>
         ${notes.length===0
           ? '<p style="font-size:12px;color:#94a3b8">Nenhuma anotação registrada.</p>'
           : notes.map(n=>`
-              <div style="margin-bottom:10px;padding:8px 12px 8px 14px;border-left:2px solid #94a3b8;font-size:12px">
-                <div style="font-weight:700;margin-bottom:3px">${formatDate(n.date)} — ${escHtml(n.title||'Sessão Regular')}</div>
-                <div style="white-space:pre-line;color:#374151">${escHtml(n.content)}</div>
+              <div style="margin-bottom:14px;padding:10px 14px;border-left:3px solid #059669;background:#f8fafc;border-radius:4px;font-size:12px">
+                <div style="font-weight:700;color:#0f172a;margin-bottom:4px">${formatDate(n.date)} — ${escHtml(n.title||'Atendimento')}</div>
+                <div style="white-space:pre-line;color:#374151;margin-bottom:6px">${escHtml(n.content)}</div>
+                ${n.result ? `<div style="background:#ecfdf5;border-left:2px solid #10b981;padding:4px 8px;font-size:11.5px;color:#047857;"><strong>🎯 Resultado da Sessão:</strong> ${escHtml(n.result)}</div>` : ''}
               </div>
             `).join('')}
       </div>
@@ -2856,7 +2854,7 @@ document.addEventListener('keydown', e => {
 
 // ─── Init ────────────────────────────────────────────────
 (async function init() {
-  setFilter('todos');
+  setTriageFilter('todos');
   setClinicFilter('todos');
   await MediaDB.init().catch(console.warn);
   await loadRecords();
