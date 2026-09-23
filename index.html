@@ -271,6 +271,29 @@
           </div>
         </div>
 
+        <!-- Atividades e Estratégias -->
+        <div class="plan-section-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h4 style="margin-bottom:0">🧩 Atividades &amp; Estratégias</h4>
+            <button type="button" class="btn btn-xs btn-ghost" onclick="addPlanActivityRow()">+ Adicionar Linha</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px;">Planejamento detalhado com colunas próprias para Atividades e Estratégias:</p>
+          <div style="overflow-x:auto;">
+            <table class="plan-table-edit" id="planActivitiesTable">
+              <thead>
+                <tr>
+                  <th style="width:48%">Atividades</th>
+                  <th style="width:48%">Estratégias</th>
+                  <th style="width:4%"></th>
+                </tr>
+              </thead>
+              <tbody id="planActivitiesTableBody">
+                <!-- Injected rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- 5. Orientação à Família (Prática breve e natural) -->
         <div class="plan-section-card">
           <h4>5. Orientação à Família (Prática breve e natural)</h4>
@@ -1534,6 +1557,31 @@ function renderPlanoTab(record) {
     `;
   }).join('');
 
+  const actList = (plan.activitiesStrategies && plan.activitiesStrategies.length > 0)
+    ? plan.activitiesStrategies
+    : DEFAULT_ACTIVITIES_STRATEGIES;
+
+  const activitiesRowsHtml = actList.map(item => {
+    let actContent = escHtml(item.activity || '');
+    if (actContent.includes(':')) {
+      const idx = actContent.indexOf(':');
+      const title = actContent.slice(0, idx);
+      const rest = actContent.slice(idx + 1);
+      actContent = `<strong style="color:var(--navy-900);display:block;margin-bottom:3px;">${title}</strong><span style="color:#334155;">${rest}</span>`;
+    }
+
+    return `
+      <tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:11px 14px;line-height:1.55;vertical-align:top;width:50%;background:#f8fafc;">
+          ${actContent}
+        </td>
+        <td style="padding:11px 14px;line-height:1.55;vertical-align:top;width:50%;color:#334155;white-space:pre-line;">
+          ${escHtml(item.strategy || '')}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
   return `
     ${renderProntuarioHeader(record)}
 
@@ -1597,6 +1645,29 @@ function renderPlanoTab(record) {
         <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">4. Metas e Progressão:</strong>
         <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px;">
           <p style="font-size:12.5px;white-space:pre-line;line-height:1.6;color:var(--navy-800);margin:0;">${escHtml(plan.monthlyGoals || 'Sem metas definidas.')}</p>
+        </div>
+      </div>
+
+      <!-- QUADRO: Atividades & Estratégias (Conforme anexo) -->
+      <div style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+          <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">Atividades &amp; Estratégias:</strong>
+          <button type="button" class="btn btn-ghost btn-xs" onclick="openPlanModal('${record.id}')" title="Editar atividades e estratégias">
+            ✏️ Editar
+          </button>
+        </div>
+        <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);">
+          <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead style="background:#0f172a;color:#fff;">
+              <tr>
+                <th style="padding:10px 14px;text-align:left;color:#fff;width:50%;font-weight:700;">Atividades</th>
+                <th style="padding:10px 14px;text-align:left;color:#fff;width:50%;font-weight:700;">Estratégias</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activitiesRowsHtml}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -2327,6 +2398,41 @@ function renderPrintSessionSheet(data) {
 }
 
 // ─── 9. CRIADOR DE PLANO (CONDUÇÃO, CRITÉRIO, METAS & RESULTADOS) ─────────
+const DEFAULT_ACTIVITIES_STRATEGIES = [
+  {
+    activity: "Consciência fonológica e relação som-letra: Jogos de rimas, aliteração, identificação do som inicial e final, segmentação de palavras em sílabas e união de sons.",
+    strategy: "Relacionar fonema e grafema com figuras, letras móveis, pistas visuais, repetição planejada e modelagem da produção oral."
+  },
+  {
+    activity: "Leitura e compreensão: Leitura compartilhada, leitura em eco e releitura de palavras, frases e textos muito curtos. Explorar quem, o quê, onde e quando.",
+    strategy: "Utilizar imagens e perguntas objetivas antes de avançar para respostas mais abertas; suporte para redução progressiva da silabação."
+  },
+  {
+    activity: "Escrita e nome completo: Treinar a escrita do nome completo em situações funcionais, completamento de letras ausentes, ditado apoiado e escrita espontânea.",
+    strategy: "Usar letras móveis, modelo visual próximo, cópia próxima e retirada gradual do modelo por etapas."
+  },
+  {
+    activity: "Números de 1 a 10: Contagem de objetos com materiais concretos, pareamento numeral e quantidade, sequência numérica, jogos de trilha e situações do cotidiano.",
+    strategy: "Associar materiais concretos, recursos táteis, suporte visual e alternância entre reconhecimento, ordenação e registro."
+  },
+  {
+    activity: "Noção de tempo: Utilizar calendário e rotina visual de acontecimentos; ensinar hoje, ontem e amanhã; dias da semana e reconhecimento inicial de horas cheias.",
+    strategy: "Apoio visual sequencial, divisão da rotina em manhã/tarde/noite e uso contextual de relógio analógico e digital."
+  },
+  {
+    activity: "Linguagem e interação social: Descrição de imagens, relatos de experiências e conversas dirigidas; criar oportunidades para iniciar troca comunicativa, manter assunto e pedir ajuda.",
+    strategy: "Ampliar perguntas e respostas, modelar diálogos funcionais, oferecer tempo hábil para responder e expandir enunciados."
+  },
+  {
+    activity: "Brincar imaginativo e criativo: Cenas de faz de conta (casa, escola, mercado, consultório) com sequência de ações, troca de papéis e fala de personagens.",
+    strategy: "Partir do brincar funcional para o simbólico, propor pequenos problemas na história e estimular a flexibilidade e cooperação."
+  },
+  {
+    activity: "Autonomia: Dividir tarefas em passos visuais: organização de materiais, sequência de início e término de atividades e guarda organizada de pertences.",
+    strategy: "Oferecer opções orientadas, reforçar respostas independentes e retirar prompts físicos e verbais progressivamente."
+  }
+];
+
 const SUGGESTED_PLAN_BENCHMARK = {
   professionals: "Leandro Moraes - Fonoaudiólogo\nGabriela Martins - Psicopedagoga Comportamental",
   frequency: "Cada profissional: 1 atendimento semanal de 60 minutos",
@@ -2344,6 +2450,7 @@ const SUGGESTED_PLAN_BENCHMARK = {
     { target: "Brincar imaginativo e criativo", strategies: "Partir do brincar funcional para cenas de casa, escola, mercado e consultório. Ensinar sequência de ações, troca de papéis, fala de personagens, criação de um problema simples e final da história.", results: "Cria e mantém pequenos roteiros, aceita ideias do outro, varia ações e participa de brincadeiras simbólicas com menor ajuda." },
     { target: "Autonomia", strategies: "Dividir tarefas em passos visuais: organizar materiais, iniciar e concluir atividade, guardar objetos, escolher entre opções e solicitar ajuda somente quando necessário. Reforçar tentativas independentes.", results: "Realiza pequenas rotinas com menos prompts, organiza seus materiais e demonstra maior iniciativa e segurança." }
   ],
+  activitiesStrategies: DEFAULT_ACTIVITIES_STRATEGIES,
   commonCriteria: "A habilidade será considerada em progresso quando Ana Laura realizá-la com menos ajuda e maior constância. Será considerada consolidada quando ocorrer com diferentes pessoas e em pelo menos duas atividades ou ambientes.",
   monthlyGoals: "Setembro | Realizar linha de base; identificar preferências e níveis atuais; iniciar rotina visual, escrita do nome, relação som-letra, números de 1 a 10 e respostas ampliadas.\nOutubro | Fortalecer consciência silábica, leitura de palavras e frases, escrita com apoio reduzido, sequência numérica, dias da semana, interação dirigida e roteiros simples de brincar.\nNovembro | Aumentar independência e variar materiais e parceiros; trabalhar pequenos textos, escrita espontânea, situações funcionais com números e horas, relatos pessoais e brincadeiras com papéis.\nDezembro | Generalizar habilidades, reduzir pistas, comparar registros, orientar a família e definir as próximas metas conforme os resultados alcançados.",
   familyBrief: "Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço, oferecer tempo para Ana Laura responder e evitar antecipar todas as respostas.",
@@ -2397,6 +2504,16 @@ function populatePlanForm(plan, patientName) {
   if (document.getElementById('planMonthlyGoals')) {
     document.getElementById('planMonthlyGoals').value = plan.monthlyGoals || '';
   }
+
+  const actTbody = document.getElementById('planActivitiesTableBody');
+  if (actTbody) {
+    actTbody.innerHTML = '';
+    const actRows = (plan.activitiesStrategies && plan.activitiesStrategies.length)
+      ? plan.activitiesStrategies
+      : (SUGGESTED_PLAN_BENCHMARK.activitiesStrategies || DEFAULT_ACTIVITIES_STRATEGIES);
+    actRows.forEach(r => addPlanActivityRow(r.activity, r.strategy));
+  }
+
   if (document.getElementById('planFamilyBrief')) {
     document.getElementById('planFamilyBrief').value = plan.familyBrief || '';
   }
@@ -2417,6 +2534,18 @@ function populatePlanForm(plan, patientName) {
   }
 }
 
+function addPlanActivityRow(activity = '', strategy = '') {
+  const tbody = document.getElementById('planActivitiesTableBody');
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><textarea rows="3" class="act-activity" placeholder="Atividades..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--border-light);border-radius:4px;">${escHtml(activity)}</textarea></td>
+    <td><textarea rows="3" class="act-strategy" placeholder="Estratégias..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--border-light);border-radius:4px;">${escHtml(strategy)}</textarea></td>
+    <td style="text-align:center;vertical-align:middle;"><button type="button" class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="this.closest('tr').remove()" title="Remover">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
 function addPlanResultRow(date = '', professional = '', skill = '', result = '', nextAdjustment = '') {
   const tbody = document.getElementById('planResultsTableBody');
   if (!tbody) return;
@@ -2434,6 +2563,15 @@ function addPlanResultRow(date = '', professional = '', skill = '', result = '',
 
 function collectPlanData() {
   const existingPlan = (editingPlan && records.find(x => x.id === editingPlan)?.interdisciplinary_plan) || {};
+
+  const actRows = [];
+  document.querySelectorAll('#planActivitiesTableBody tr').forEach(tr => {
+    const activity = tr.querySelector('.act-activity')?.value.trim() || '';
+    const strategy = tr.querySelector('.act-strategy')?.value.trim() || '';
+    if (activity || strategy) {
+      actRows.push({ activity, strategy });
+    }
+  });
 
   const resRows = [];
   document.querySelectorAll('#planResultsTableBody tr').forEach(tr => {
@@ -2455,6 +2593,7 @@ function collectPlanData() {
     sharedGuidance: document.getElementById('planSharedGuidance')?.value.trim() || '',
     commonCriteria: document.getElementById('planCommonCriteria')?.value.trim() || '',
     monthlyGoals: document.getElementById('planMonthlyGoals')?.value.trim() || '',
+    activitiesStrategies: actRows,
     familyBrief: document.getElementById('planFamilyBrief')?.value.trim() || '',
     resultRecords: resRows,
     teamReviewDate: document.getElementById('planTeamReview')?.value.trim() || '____ / ____ / ______',
@@ -2665,23 +2804,21 @@ function printInterdisciplinaryPlan(record, plan) {
 
       <div>
         <h2 style="font-family:Arial,sans-serif;font-size:12pt;font-weight:800;color:#1e293b;margin-bottom:10px;">
-          3. Plano único: estratégias, atividades e resultados
+          3. Atividades &amp; Estratégias
         </h2>
 
         <table class="pdf-table">
           <thead>
             <tr>
-              <th style="width:24%;">Alvo</th>
-              <th style="width:43%;">Estratégias e atividades</th>
-              <th style="width:33%;">Resultados esperados</th>
+              <th style="width:50%;">Atividades</th>
+              <th style="width:50%;">Estratégias</th>
             </tr>
           </thead>
           <tbody>
-            ${(plan.tableRows || []).map(r => `
+            ${(plan.activitiesStrategies && plan.activitiesStrategies.length > 0 ? plan.activitiesStrategies : DEFAULT_ACTIVITIES_STRATEGIES).map(r => `
               <tr>
-                <td style="font-weight:700;color:#0f172a;">${escHtml(r.target)}</td>
-                <td style="white-space:pre-line;">${escHtml(r.strategies)}</td>
-                <td style="white-space:pre-line;">${escHtml(r.results)}</td>
+                <td style="vertical-align:top;line-height:1.45;padding:6px 8px;">${escHtml(r.activity)}</td>
+                <td style="vertical-align:top;line-height:1.45;padding:6px 8px;">${escHtml(r.strategy)}</td>
               </tr>
             `).join('')}
           </tbody>
