@@ -1516,7 +1516,7 @@ function renderProntuarioTab(record) {
   `;
 }
 
-// ─── 4. PLANO INTERDISCIPLINAR (CAMPOS IDÊNTICOS AO "EDITAR PLANO") ─────
+// ─── 4. PLANO INTERDISCIPLINAR (CONDUÇÃO, CRITÉRIO, METAS & RESULTADOS) ─────
 function renderPlanoTab(record) {
   const plan = record.interdisciplinary_plan || SUGGESTED_PLAN_BENCHMARK;
 
@@ -1526,79 +1526,6 @@ function renderPlanoTab(record) {
     commonCriteriaText = commonCriteriaText.replace(/Ana Laura/g, record.name);
   }
 
-  // 2. Objetivos Específicos
-  const specificGoalsRaw = plan.specificGoals || SUGGESTED_PLAN_BENCHMARK.specificGoals || '';
-  const specificGoalsList = specificGoalsRaw
-    .split('\n')
-    .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
-    .filter(Boolean);
-
-  const specificGoalsHtml = specificGoalsList.length > 0
-    ? `<ul style="margin:0;padding-left:18px;line-height:1.6;">` +
-      specificGoalsList.map(g => `<li style="margin-bottom:6px;">${escHtml(g)}</li>`).join('') +
-      `</ul>`
-    : `<p style="margin:0;color:var(--text-muted);font-style:italic;">Sem objetivos específicos definidos.</p>`;
-
-  // 3. Plano Único: Estratégias, Atividades e Resultados
-  const tableRows = (plan.tableRows && plan.tableRows.length > 0)
-    ? plan.tableRows
-    : SUGGESTED_PLAN_BENCHMARK.tableRows;
-
-  const tableRowsHtml = (tableRows && tableRows.length > 0)
-    ? tableRows.map(r => `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="padding:10px 14px;font-weight:700;color:#0f172a;vertical-align:top;width:25%;">${escHtml(r.target)}</td>
-          <td style="padding:10px 14px;color:#334155;white-space:pre-line;vertical-align:top;line-height:1.5;width:42%;">${escHtml(r.strategies)}</td>
-          <td style="padding:10px 14px;color:#334155;white-space:pre-line;vertical-align:top;line-height:1.5;width:33%;">${escHtml(r.results)}</td>
-        </tr>
-      `).join('')
-    : `<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--text-muted)">Nenhuma linha cadastrada.</td></tr>`;
-
-  // 4. Metas Mês a Mês
-  const monthlyRaw = plan.monthlyGoals || SUGGESTED_PLAN_BENCHMARK.monthlyGoals || '';
-  const monthlyLines = monthlyRaw.split('\n').filter(Boolean);
-  const monthlyGoalsRowsHtml = monthlyLines.map(line => {
-    const parts = line.split('|');
-    const period = parts.length > 1 ? parts[0].trim() : '';
-    const goal = parts.length > 1 ? parts.slice(1).join('|').trim() : line.trim();
-    if (!period) {
-      return `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td colspan="2" style="padding:10px 14px;color:#334155;line-height:1.5;">${escHtml(goal)}</td>
-        </tr>
-      `;
-    }
-    return `
-      <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:10px 14px;font-weight:700;color:#0f172a;width:22%;vertical-align:top;">${escHtml(period)}</td>
-        <td style="padding:10px 14px;color:#334155;line-height:1.5;">${escHtml(goal)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  // 5. Orientações Práticas por Situação
-  const familyRaw = plan.familyGuidelines || SUGGESTED_PLAN_BENCHMARK.familyGuidelines || '';
-  const familyLines = familyRaw.split('\n').filter(Boolean);
-  const familyGuidelinesRowsHtml = familyLines.map(line => {
-    const parts = line.split('|');
-    const situation = parts.length > 1 ? parts[0].trim() : '';
-    const guideline = parts.length > 1 ? parts.slice(1).join('|').trim() : line.trim();
-    if (!situation) {
-      return `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td colspan="2" style="padding:10px 14px;color:#334155;line-height:1.5;">${escHtml(guideline)}</td>
-        </tr>
-      `;
-    }
-    return `
-      <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:10px 14px;font-weight:700;color:#0f172a;width:22%;vertical-align:top;">${escHtml(situation)}</td>
-        <td style="padding:10px 14px;color:#334155;line-height:1.5;">${escHtml(guideline)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  // 6. Registro de Resultados
   const resultRows = (plan.resultRecords && plan.resultRecords.length > 0)
     ? plan.resultRecords
     : [
@@ -1618,22 +1545,22 @@ function renderPlanoTab(record) {
     if (isEmpty) {
       return `
         <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="padding:10px 12px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____/____</td>
-          <td style="padding:10px 12px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
-          <td style="padding:10px 12px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">________________</td>
-          <td style="padding:10px 12px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">__________________</td>
-          <td style="padding:10px 12px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____/____</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">________________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">__________________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
         </tr>
       `;
     }
 
     return `
       <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:10px 12px;font-weight:600;color:#0f172a;font-size:12px;">${escHtml(d || '—')}</td>
-        <td style="padding:10px 12px;color:#334155;font-size:12px;">${escHtml(p || '—')}</td>
-        <td style="padding:10px 12px;color:#334155;font-size:12px;">${escHtml(s || '—')}</td>
-        <td style="padding:10px 12px;color:#334155;font-size:12px;">${escHtml(r || '—')}</td>
-        <td style="padding:10px 12px;color:#334155;font-size:12px;">${escHtml(a || '—')}</td>
+        <td style="padding:10px 14px;font-weight:600;color:#0f172a;font-size:12px;">${escHtml(d || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(p || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(s || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(r || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(a || '—')}</td>
       </tr>
     `;
   }).join('');
@@ -1643,185 +1570,115 @@ function renderPlanoTab(record) {
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
-        <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Plano Interdisciplinar de Intervenção</h3>
-        <p style="font-size:12px;color:var(--text-muted)">Visualização estruturada dos campos do plano interdisciplinar</p>
+        <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Plano Interdisciplinar do Paciente</h3>
+        <p style="font-size:12px;color:var(--text-muted)">Plano estruturado de intervenção integrada conforme modelo oficial</p>
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary btn-sm" onclick="openPlanModal('${record.id}')">
+        <button class="btn btn-ghost btn-sm" onclick="openPlanModal('${record.id}')">
           ✏️ Editar Plano
         </button>
-        <button class="btn btn-ghost btn-sm" onclick="triggerPrintPlan()">
+        <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Baixar / Imprimir PDF Oficial
         </button>
       </div>
     </div>
 
-    <!-- 1. Identificação da Intervenção -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;">
-        1. Identificação da Intervenção
-      </h4>
-      <div class="form-row form-row-2 form-group" style="margin-bottom:14px;">
+    <div style="background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm);">
+      <!-- 1. Identificação do Cabeçalho -->
+      <div style="display:flex;justify-content:space-between;border-bottom:2px solid var(--border-light);padding-bottom:14px;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
-          <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Profissionais Responsáveis</label>
-          <div style="font-size:13px;color:var(--navy-800);white-space:pre-line;line-height:1.5;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:6px;">
-            ${escHtml(plan.professionals || 'Não informado')}
-          </div>
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--emerald-600);font-weight:700">Clínica ${escHtml(record.clinic || 'Integrar')}</span>
+          <h4 style="font-size:17px;font-weight:800;color:var(--navy-900);margin-top:2px">Plano de Intervenção Integrada</h4>
         </div>
-        <div>
-          <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Frequência dos Atendimentos</label>
-          <div style="font-size:13px;color:var(--navy-800);white-space:pre-line;line-height:1.5;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:6px;">
-            ${escHtml(plan.frequency || 'Não informada')}
-          </div>
+        <div style="text-align:right;font-size:11px;color:var(--text-muted)">
+          <div>Período: <strong>${escHtml(plan.period || 'Setembro a dezembro de 2026 - flexível')}</strong></div>
+          <div>Frequência: <strong>${escHtml(plan.frequency || 'Cada profissional: 1 atendimento semanal de 60 minutos')}</strong></div>
         </div>
       </div>
-      <div>
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Período de Execução &amp; Flexibilidade</label>
-        <div style="font-size:13px;color:var(--navy-800);font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:6px;">
-          ${escHtml(plan.period || 'Não informado')}
-        </div>
-      </div>
-    </div>
 
-    <!-- 2. Objetivo Geral & Condução -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;">
-        2. Objetivo Geral &amp; Condução
-      </h4>
-      <div style="margin-bottom:16px;">
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Objetivo Geral</label>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #059669;padding:12px 16px;border-radius:6px;font-size:13px;color:#14532d;line-height:1.6;">
-          ${escHtml(plan.generalGoal || SUGGESTED_PLAN_BENCHMARK.generalGoal)}
-        </div>
+      <!-- Profissionais Responsáveis -->
+      <div style="margin-bottom:18px">
+        <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">Profissionais Responsáveis:</strong>
+        <p style="font-size:13px;white-space:pre-line;color:var(--navy-800);margin-top:4px;font-weight:500;">${escHtml(plan.professionals || '')}</p>
       </div>
-      <div style="margin-bottom:16px;">
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Objetivos Específicos (Um por linha)</label>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 18px;font-size:13px;color:var(--navy-800);line-height:1.6;">
-          ${specificGoalsHtml}
+
+      <!-- QUADRO 1: Condução compartilhada (Substitui Objetivo Geral, conforme anexo) -->
+      <div style="margin-bottom:16px;background:#fefce8;border:1px solid #fde047;border-left:4px solid #f59e0b;padding:14px 16px;border-radius:8px;">
+        <div style="font-weight:700;font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span>🤝</span> Condução compartilhada
         </div>
-      </div>
-      <div>
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Condução Compartilhada (Diretrizes)</label>
-        <div style="background:#fefce8;border:1px solid #fde047;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:13px;color:#78350f;line-height:1.6;">
+        <p style="font-size:12.5px;color:#78350f;line-height:1.6;margin:0;">
           ${escHtml(sharedGuidanceText)}
-        </div>
+        </p>
       </div>
-    </div>
 
-    <!-- 3. Plano Único: Estratégias, Atividades e Resultados -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;">
-        3. Plano Único: Estratégias, Atividades e Resultados
-      </h4>
-      <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:16px;">
-        <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12.5px;">
-          <thead style="background:#0f172a;color:#fff;">
-            <tr>
-              <th style="padding:10px 14px;text-align:left;color:#fff;width:25%;font-weight:700;">Alvo</th>
-              <th style="padding:10px 14px;text-align:left;color:#fff;width:42%;font-weight:700;">Estratégias e Atividades</th>
-              <th style="padding:10px 14px;text-align:left;color:#fff;width:33%;font-weight:700;">Resultados Esperados</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tableRowsHtml}
-          </tbody>
-        </table>
-      </div>
-      <div>
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Critério Comum de Progresso e Consolidação</label>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #059669;padding:12px 16px;border-radius:6px;font-size:13px;color:#14532d;line-height:1.6;">
+      <!-- QUADRO 2: Critério comum (Conforme anexo da Ana Laura) -->
+      <div style="margin-bottom:18px;background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #059669;padding:14px 16px;border-radius:8px;">
+        <div style="font-weight:700;font-size:12px;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span>🎯</span> Critério comum
+        </div>
+        <p style="font-size:12.5px;color:#14532d;line-height:1.6;margin:0;">
           ${escHtml(commonCriteriaText)}
+        </p>
+      </div>
+
+      <!-- Metas Mês a Mês -->
+      <div style="margin-bottom:18px;">
+        <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">4. Metas e Progressão:</strong>
+        <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px;">
+          <p style="font-size:12.5px;white-space:pre-line;line-height:1.6;color:var(--navy-800);margin:0;">${escHtml(plan.monthlyGoals || 'Sem metas definidas.')}</p>
         </div>
       </div>
-    </div>
 
-    <!-- 4. Metas Mês a Mês -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;">
-        4. Metas Mês a Mês
-      </h4>
-      <p style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">Planejamento mensal definido para o acompanhamento:</p>
-      <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);">
-        <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12.5px;">
-          <thead style="background:#0f172a;color:#fff;">
-            <tr>
-              <th style="padding:10px 14px;text-align:left;color:#fff;width:22%;font-weight:700;">Período</th>
-              <th style="padding:10px 14px;text-align:left;color:#fff;width:78%;font-weight:700;">Planejamento Mensal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${monthlyGoalsRowsHtml}
-          </tbody>
-        </table>
+      <!-- Orientação Familiar -->
+      <div style="margin-bottom:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px 16px;">
+        <strong style="font-size:11px;color:var(--navy-700);text-transform:uppercase;letter-spacing:0.5px;">5. Orientação à Família (Prática breve e natural):</strong>
+        <p style="font-size:12.5px;color:#334155;margin-top:5px;line-height:1.55;margin-bottom:0;">${escHtml(plan.familyBrief || '')}</p>
       </div>
-    </div>
 
-    <!-- 5. Orientação e Observações para a Família -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;">
-        5. Orientação e Observações para a Família
-      </h4>
-      <div style="margin-bottom:16px;">
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Prática Breve e Observações para o Dia a Dia</label>
-        <div style="background:#fffbeb;border:1px solid #fde047;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:13px;color:#78350f;line-height:1.6;">
-          ${escHtml(plan.familyBrief || SUGGESTED_PLAN_BENCHMARK.familyBrief)}
+      <!-- PARTE SOLICITADA: 6. Registro de resultados (Conforme anexo da Ana Laura) -->
+      <div style="margin-top:22px;border-top:1px solid var(--border-light);padding-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h4 style="font-size:13.5px;font-weight:800;color:var(--navy-900);text-transform:uppercase;letter-spacing:0.5px;margin:0;">
+              6. Registro de resultados
+            </h4>
+            <p style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">Acompanhamento das habilidades trabalhadas e ajustes</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-xs" onclick="openPlanModal('${record.id}')" title="Editar resultados e data de revisão">
+            ✏️ Editar Resultados
+          </button>
         </div>
-      </div>
-      <div>
-        <label class="form-label" style="font-weight:700;font-size:11.5px;color:var(--navy-600);text-transform:uppercase;letter-spacing:0.5px;">Orientações Práticas por Situação (Formato: Situação | Conduta Familiar)</label>
+
         <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);">
-          <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12.5px;">
-            <thead style="background:#0f172a;color:#fff;">
+          <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12px;">
+            <thead style="background:#0d3b38;color:#fff;">
               <tr>
-                <th style="padding:10px 14px;text-align:left;color:#fff;width:22%;font-weight:700;">Situação</th>
-                <th style="padding:10px 14px;text-align:left;color:#fff;width:78%;font-weight:700;">Conduta Familiar Recomendada</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:14%;font-weight:700;">Data</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:20%;font-weight:700;">Profissional</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:26%;font-weight:700;">Habilidade trabalhada</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:24%;font-weight:700;">Resultado observado</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:16%;font-weight:700;">Próximo ajuste</th>
               </tr>
             </thead>
             <tbody>
-              ${familyGuidelinesRowsHtml}
+              ${resultRowsHtml}
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
 
-    <!-- 6. Registro de Resultados -->
-    <div class="plan-section-card" style="box-shadow:var(--shadow-sm);background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-light);padding-bottom:10px;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <h4 style="font-size:14px;font-weight:800;color:var(--navy-900);margin:0;">
-          6. Registro de Resultados
-        </h4>
-        <button type="button" class="btn btn-ghost btn-xs" onclick="openPlanModal('${record.id}')" title="Editar resultados e data de revisão">
-          ✏️ Editar Resultados
-        </button>
-      </div>
-      <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:16px;">
-        <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12px;">
-          <thead style="background:#0d3b38;color:#fff;">
-            <tr>
-              <th style="padding:10px 12px;text-align:left;color:#fff;width:14%;font-weight:700;">Data</th>
-              <th style="padding:10px 12px;text-align:left;color:#fff;width:20%;font-weight:700;">Profissional</th>
-              <th style="padding:10px 12px;text-align:left;color:#fff;width:26%;font-weight:700;">Habilidade Trabalhada</th>
-              <th style="padding:10px 12px;text-align:left;color:#fff;width:24%;font-weight:700;">Resultado Observado</th>
-              <th style="padding:10px 12px;text-align:left;color:#fff;width:16%;font-weight:700;">Próximo Ajuste</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${resultRowsHtml}
-          </tbody>
-        </table>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-        <div style="font-size:13px;color:var(--navy-700);">
-          <strong>Data de Revisão da Equipe:</strong>
-          <span style="display:inline-block;padding:4px 12px;background:var(--navy-50);border:1px solid var(--border-light);border-radius:4px;font-weight:700;color:var(--navy-900);margin-left:8px;font-family:monospace;">
-            ${escHtml(plan.teamReviewDate || '____ / ____ / ______')}
-          </span>
+        <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--navy-700);flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong>Revisão da equipe:</strong>
+            <span style="display:inline-block;padding:3px 10px;background:var(--navy-50);border:1px solid var(--border-light);border-radius:4px;font-weight:700;color:var(--navy-900);margin-left:6px;font-family:monospace;">
+              ${escHtml(plan.teamReviewDate || '____ / ____ / ______')}
+            </span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
+            🖨️ Abrir Visualização para Impressão / Salvar PDF
+          </button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
-          🖨️ Baixar / Imprimir PDF Oficial
-        </button>
       </div>
     </div>
   `;
