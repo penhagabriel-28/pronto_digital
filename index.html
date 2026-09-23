@@ -244,70 +244,39 @@
           </div>
         </div>
 
-        <!-- 2. Objetivo -->
+        <!-- 2. Condução compartilhada -->
         <div class="plan-section-card">
-          <h4>2. Objetivo Geral &amp; Condução</h4>
-          <div class="form-group">
-            <label class="form-label">Objetivo Geral</label>
-            <textarea id="planGeneralGoal" class="form-textarea" rows="3" placeholder="Promover o desenvolvimento integrado nas áreas de linguagem, consciência fonológica, leitura, escrita, matemática..."></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Objetivos Específicos (Um por linha)</label>
-            <textarea id="planSpecificGoals" class="form-textarea" rows="5" placeholder="• Ampliar a consciência fonológica, relacionando sons da fala às letras e sílabas.&#10;• Avançar da leitura silábica para a leitura de palavras e frases curtas.&#10;• Escrever o nome completo e palavras simples com redução gradual das ajudas."></textarea>
-          </div>
+          <h4>🤝 Condução compartilhada</h4>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Condução Compartilhada (Diretrizes)</label>
-            <textarea id="planSharedGuidance" class="form-textarea" rows="2" placeholder="Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas..."></textarea>
+            <label class="form-label">Diretrizes de Condução Compartilhada</label>
+            <textarea id="planSharedGuidance" class="form-textarea" rows="3" placeholder="Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas. Registrar respostas independentes, respostas com ajuda e habilidades que já aparecem em mais de um ambiente."></textarea>
           </div>
         </div>
 
-        <!-- 3. Plano Único: Estratégias, Atividades e Resultados -->
+        <!-- 3. Critério comum -->
         <div class="plan-section-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <h4 style="margin-bottom:0">3. Plano Único: Estratégias, Atividades e Resultados</h4>
-            <button type="button" class="btn btn-xs btn-ghost" onclick="addPlanTableRow()">+ Adicionar Área/Alvo</button>
-          </div>
-          <div style="overflow-x:auto;">
-            <table class="plan-table-edit" id="planUniqueTable">
-              <thead>
-                <tr>
-                  <th style="width:25%">Alvo</th>
-                  <th style="width:42%">Estratégias e Atividades</th>
-                  <th style="width:28%">Resultados Esperados</th>
-                  <th style="width:5%"></th>
-                </tr>
-              </thead>
-              <tbody id="planTableBody">
-                <!-- Injected rows -->
-              </tbody>
-            </table>
-          </div>
-          <div class="form-group" style="margin-top:12px;margin-bottom:0">
+          <h4>🎯 Critério comum</h4>
+          <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Critério Comum de Progresso e Consolidação</label>
-            <textarea id="planCommonCriteria" class="form-textarea" rows="2" placeholder="A habilidade será considerada em progresso quando realizá-la com menos ajuda e maior constância. Será consolidada quando ocorrer com diferentes pessoas e em pelo menos duas atividades."></textarea>
+            <textarea id="planCommonCriteria" class="form-textarea" rows="3" placeholder="A habilidade será considerada em progresso quando realizá-la com menos ajuda e maior constância. Será consolidada quando ocorrer com diferentes pessoas e em pelo menos duas atividades ou ambientes."></textarea>
           </div>
         </div>
 
-        <!-- 4. Metas Mês a Mês (APENAS MÊS A MÊS, SEM POLUIÇÃO DE REGRAS) -->
+        <!-- 4. Metas e Progressão -->
         <div class="plan-section-card">
-          <h4>4. Metas Mês a Mês</h4>
-          <p style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px;">Defina o objetivo principal para cada mês do acompanhamento:</p>
+          <h4>4. Metas e Progressão</h4>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Planejamento Mensal (Formato: Mês | Meta)</label>
-            <textarea id="planMonthlyGoals" class="form-textarea" rows="4" placeholder="Mês 1 | Realizar linha de base; identificar preferências e rotina...&#10;Mês 2 | Fortalecer consciência silábica, leitura de palavras e frases...&#10;Mês 3 | Aumentar independência e situações funcionais...&#10;Mês 4 | Generalizar habilidades e orientar família..."></textarea>
+            <label class="form-label">Metas Mês a Mês</label>
+            <textarea id="planMonthlyGoals" class="form-textarea" rows="4" placeholder="Setembro | Realizar linha de base; identificar preferências e rotina...&#10;Outubro | Fortalecer consciência silábica, leitura de palavras e frases...&#10;Novembro | Aumentar independência e situações funcionais...&#10;Dezembro | Generalizar habilidades e orientar família..."></textarea>
           </div>
         </div>
 
-        <!-- 5. Orientação e Observação para a Família -->
+        <!-- 5. Orientação à Família (Prática breve e natural) -->
         <div class="plan-section-card">
-          <h4>5. Orientação e Observações para a Família</h4>
-          <div class="form-group">
-            <label class="form-label">Prática Breve e Observações para o Dia a Dia</label>
-            <textarea id="planFamilyBrief" class="form-textarea" rows="2" placeholder="Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço e oferecer tempo para responder..."></textarea>
-          </div>
+          <h4>5. Orientação à Família (Prática breve e natural)</h4>
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Orientações Práticas por Situação (Formato: Situação | Conduta Familiar)</label>
-            <textarea id="planFamilyGuidelines" class="form-textarea" rows="5" placeholder="Leitura | Ler histórias curtas, pedir que localize letras ou palavras conhecidas...&#10;Escrita | Estimular a escrita do nome completo com modelo reduzido gradualmente...&#10;Tempo e números | Usar calendário e relógio na rotina...&#10;Comunicação | Dar tempo para responder; ampliar a fala sem corrigir com rigidez...&#10;Brincar e autonomia | Brincadeiras de faz de conta e organização de materiais..."></textarea>
+            <label class="form-label">Orientações e Prática Breve para o Dia a Dia</label>
+            <textarea id="planFamilyBrief" class="form-textarea" rows="3" placeholder="Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço e oferecer tempo para responder..."></textarea>
           </div>
         </div>
 
@@ -2410,21 +2379,27 @@ function loadSuggestedPlanTemplate() {
 }
 
 function populatePlanForm(plan, patientName) {
-  document.getElementById('planProfessionals').value = plan.professionals || '';
-  document.getElementById('planFrequency').value     = plan.frequency || '';
-  document.getElementById('planPeriod').value        = plan.period || '';
-  document.getElementById('planGeneralGoal').value   = (plan.generalGoal || '').replace(/\[Nome\]/g, patientName);
-  document.getElementById('planSpecificGoals').value = plan.specificGoals || '';
-  document.getElementById('planSharedGuidance').value= plan.sharedGuidance || '';
-  document.getElementById('planCommonCriteria').value= (plan.commonCriteria || '').replace(/\[Nome\]/g, patientName);
-  document.getElementById('planMonthlyGoals').value  = plan.monthlyGoals || '';
-  document.getElementById('planFamilyBrief').value   = plan.familyBrief || '';
-  document.getElementById('planFamilyGuidelines').value = plan.familyGuidelines || '';
-
-  const tbody = document.getElementById('planTableBody');
-  tbody.innerHTML = '';
-  const rows = plan.tableRows || SUGGESTED_PLAN_BENCHMARK.tableRows;
-  rows.forEach(r => addPlanTableRow(r.target, r.strategies, r.results));
+  if (document.getElementById('planProfessionals')) {
+    document.getElementById('planProfessionals').value = plan.professionals || '';
+  }
+  if (document.getElementById('planFrequency')) {
+    document.getElementById('planFrequency').value = plan.frequency || '';
+  }
+  if (document.getElementById('planPeriod')) {
+    document.getElementById('planPeriod').value = plan.period || '';
+  }
+  if (document.getElementById('planSharedGuidance')) {
+    document.getElementById('planSharedGuidance').value = plan.sharedGuidance || '';
+  }
+  if (document.getElementById('planCommonCriteria')) {
+    document.getElementById('planCommonCriteria').value = (plan.commonCriteria || '').replace(/\[Nome\]/g, patientName);
+  }
+  if (document.getElementById('planMonthlyGoals')) {
+    document.getElementById('planMonthlyGoals').value = plan.monthlyGoals || '';
+  }
+  if (document.getElementById('planFamilyBrief')) {
+    document.getElementById('planFamilyBrief').value = plan.familyBrief || '';
+  }
 
   const resTbody = document.getElementById('planResultsTableBody');
   if (resTbody) {
@@ -2440,18 +2415,6 @@ function populatePlanForm(plan, patientName) {
   if (reviewInput) {
     reviewInput.value = plan.teamReviewDate || '____ / ____ / ______';
   }
-}
-
-function addPlanTableRow(target = '', strategies = '', results = '') {
-  const tbody = document.getElementById('planTableBody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><textarea rows="2" class="row-target" placeholder="Área / Alvo">${escHtml(target)}</textarea></td>
-    <td><textarea rows="3" class="row-strategies" placeholder="Estratégias">${escHtml(strategies)}</textarea></td>
-    <td><textarea rows="3" class="row-results" placeholder="Resultados esperados">${escHtml(results)}</textarea></td>
-    <td style="text-align:center"><button type="button" class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="this.closest('tr').remove()">×</button></td>
-  `;
-  tbody.appendChild(tr);
 }
 
 function addPlanResultRow(date = '', professional = '', skill = '', result = '', nextAdjustment = '') {
@@ -2470,15 +2433,7 @@ function addPlanResultRow(date = '', professional = '', skill = '', result = '',
 }
 
 function collectPlanData() {
-  const rows = [];
-  document.querySelectorAll('#planTableBody tr').forEach(tr => {
-    const target = tr.querySelector('.row-target')?.value.trim();
-    const strategies = tr.querySelector('.row-strategies')?.value.trim();
-    const results = tr.querySelector('.row-results')?.value.trim();
-    if (target || strategies || results) {
-      rows.push({ target, strategies, results });
-    }
-  });
+  const existingPlan = (editingPlan && records.find(x => x.id === editingPlan)?.interdisciplinary_plan) || {};
 
   const resRows = [];
   document.querySelectorAll('#planResultsTableBody tr').forEach(tr => {
@@ -2493,17 +2448,14 @@ function collectPlanData() {
   });
 
   return {
-    professionals: document.getElementById('planProfessionals').value.trim(),
-    frequency: document.getElementById('planFrequency').value.trim(),
-    period: document.getElementById('planPeriod').value.trim(),
-    generalGoal: document.getElementById('planGeneralGoal').value.trim(),
-    specificGoals: document.getElementById('planSpecificGoals').value.trim(),
-    sharedGuidance: document.getElementById('planSharedGuidance').value.trim(),
-    tableRows: rows,
-    commonCriteria: document.getElementById('planCommonCriteria').value.trim(),
-    monthlyGoals: document.getElementById('planMonthlyGoals').value.trim(),
-    familyBrief: document.getElementById('planFamilyBrief').value.trim(),
-    familyGuidelines: document.getElementById('planFamilyGuidelines').value.trim(),
+    ...existingPlan,
+    professionals: document.getElementById('planProfessionals')?.value.trim() || '',
+    frequency: document.getElementById('planFrequency')?.value.trim() || '',
+    period: document.getElementById('planPeriod')?.value.trim() || '',
+    sharedGuidance: document.getElementById('planSharedGuidance')?.value.trim() || '',
+    commonCriteria: document.getElementById('planCommonCriteria')?.value.trim() || '',
+    monthlyGoals: document.getElementById('planMonthlyGoals')?.value.trim() || '',
+    familyBrief: document.getElementById('planFamilyBrief')?.value.trim() || '',
     resultRecords: resRows,
     teamReviewDate: document.getElementById('planTeamReview')?.value.trim() || '____ / ____ / ______',
     updatedAt: new Date().toISOString()
