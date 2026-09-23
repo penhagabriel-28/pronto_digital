@@ -307,6 +307,35 @@
             <textarea id="planFamilyGuidelines" class="form-textarea" rows="5" placeholder="Leitura | Ler histórias curtas, pedir que localize letras ou palavras conhecidas...&#10;Escrita | Estimular a escrita do nome completo com modelo reduzido gradualmente...&#10;Tempo e números | Usar calendário e relógio na rotina...&#10;Comunicação | Dar tempo para responder; ampliar a fala sem corrigir com rigidez...&#10;Brincar e autonomia | Brincadeiras de faz de conta e organização de materiais..."></textarea>
           </div>
         </div>
+
+        <!-- 6. Registro de Resultados -->
+        <div class="plan-section-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h4 style="margin-bottom:0">6. Registro de Resultados</h4>
+            <button type="button" class="btn btn-xs btn-ghost" onclick="addPlanResultRow()">+ Adicionar Linha</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="plan-table-edit" id="planResultsTable">
+              <thead>
+                <tr>
+                  <th style="width:14%">Data</th>
+                  <th style="width:20%">Profissional</th>
+                  <th style="width:26%">Habilidade Trabalhada</th>
+                  <th style="width:22%">Resultado Observado</th>
+                  <th style="width:14%">Próximo Ajuste</th>
+                  <th style="width:4%"></th>
+                </tr>
+              </thead>
+              <tbody id="planResultsTableBody">
+                <!-- Injected rows -->
+              </tbody>
+            </table>
+          </div>
+          <div class="form-group" style="margin-top:12px;margin-bottom:0">
+            <label class="form-label">Data de Revisão da Equipe</label>
+            <input type="text" id="planTeamReview" class="form-input" placeholder="Ex: ____ / ____ / ______">
+          </div>
+        </div>
       </form>
     </div>
     <div class="modal-footer" style="justify-content:space-between">
@@ -595,7 +624,7 @@ let activeRecordId   = null;
 let currentFilter    = 'todos';
 let clinicFilter     = 'todos';
 let triageFilter     = 'todos'; // 'todos', 'psicopedagogia', 'aba'
-let activeTab        = 'historico';
+let activeTab        = 'plano';
 let isSaving         = false;
 let editingPlan      = null;
 let editingReportId  = null;
@@ -1005,22 +1034,23 @@ function renderDetail(id) {
   const notesCount = (record.dailyNotes||[]).length;
   const pRepsCount = partialReports.filter(pr => pr.record_id === record.id).length;
 
-  // Se a aba ativa não for aplicável ao perfil triado, reseta para histórico
-  if (activeTab === 'relatorios' && !isAba) activeTab = 'historico';
-  if (activeTab === 'plano' && isAba && !record.interdisciplinary_plan) activeTab = 'historico';
+  // Se a aba ativa não for aplicável ao perfil triado, ajusta
+  if (activeTab === 'relatorios' && !isAba) activeTab = 'plano';
+  if (activeTab === 'plano' && isAba && !record.interdisciplinary_plan) activeTab = 'relatorios';
 
   dc.innerHTML = `
     <div class="detail-tabs">
-      <button class="detail-tab ${activeTab==='historico'?'active':''}" onclick="switchTab('historico')">
-        🕒 Histórico &amp; Sessões
-        <span style="margin-left:6px;background:var(--indigo-100);color:var(--indigo-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${notesCount}</span>
-      </button>
-
       ${isAba ? `
         <button class="detail-tab ${activeTab==='relatorios'?'active':''}" onclick="switchTab('relatorios')">
           📊 Folhas de Registro ABA
           <span style="margin-left:6px;background:var(--emerald-100);color:var(--emerald-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${pRepsCount}</span>
         </button>
+        ${record.interdisciplinary_plan ? `
+          <button class="detail-tab ${activeTab==='plano'?'active':''}" onclick="switchTab('plano')">
+            📄 Plano Interdisciplinar
+            <span style="color:#059669;margin-left:4px">●</span>
+          </button>
+        ` : ''}
       ` : `
         <button class="detail-tab ${activeTab==='plano'?'active':''}" onclick="switchTab('plano')">
           📄 Plano Interdisciplinar
@@ -1035,6 +1065,11 @@ function renderDetail(id) {
       <button class="detail-tab ${activeTab==='anexos'?'active':''}" onclick="switchTab('anexos')">
         📁 Mídias &amp; Anexos
         <span id="attachmentsTabBadge" style="margin-left:6px;background:var(--navy-100);color:var(--navy-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">0</span>
+      </button>
+
+      <button class="detail-tab ${activeTab==='historico'?'active':''}" onclick="switchTab('historico')">
+        🕒 Histórico &amp; Sessões
+        <span style="margin-left:6px;background:var(--indigo-100);color:var(--indigo-700);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700">${notesCount}</span>
       </button>
     </div>
     <div id="tabContent" style="flex:1;overflow-y:auto;padding:26px 30px;">
@@ -1054,11 +1089,12 @@ function switchTab(tab) {
 }
 
 function renderTabContent(record) {
-  if (activeTab === 'historico')  return renderHistoricoTab(record);
-  if (activeTab === 'relatorios') return renderRelatoriosTab(record);
   if (activeTab === 'plano')      return renderPlanoTab(record);
+  if (activeTab === 'relatorios') return renderRelatoriosTab(record);
+  if (activeTab === 'prontuario') return renderProntuarioTab(record);
   if (activeTab === 'anexos')     return renderAnexosTab(record);
-  return renderProntuarioTab(record);
+  if (activeTab === 'historico')  return renderHistoricoTab(record);
+  return renderPlanoTab(record);
 }
 
 // ─── Header Limpo & Menu TDAH-Friendly (Menos Botões) ─────
@@ -1477,20 +1513,66 @@ function renderProntuarioTab(record) {
   `;
 }
 
-// ─── 4. PLANO INTERDISCIPLINAR (METAS MÊS A MÊS + ORIENTAÇÃO FAMÍLIA) ─────
+// ─── 4. PLANO INTERDISCIPLINAR (CONDUÇÃO, CRITÉRIO, METAS & RESULTADOS) ─────
 function renderPlanoTab(record) {
-  const plan = record.interdisciplinary_plan;
+  const plan = record.interdisciplinary_plan || SUGGESTED_PLAN_BENCHMARK;
+
+  const sharedGuidanceText = plan.sharedGuidance || SUGGESTED_PLAN_BENCHMARK.sharedGuidance;
+  let commonCriteriaText = plan.commonCriteria || SUGGESTED_PLAN_BENCHMARK.commonCriteria;
+  if (record.name && record.name !== 'Ana Laura Amaral Costa' && !plan.commonCriteria) {
+    commonCriteriaText = commonCriteriaText.replace(/Ana Laura/g, record.name);
+  }
+
+  const resultRows = (plan.resultRecords && plan.resultRecords.length > 0)
+    ? plan.resultRecords
+    : [
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' }
+      ];
+
+  const resultRowsHtml = resultRows.map(row => {
+    const d  = row.date?.trim();
+    const p  = row.professional?.trim();
+    const s  = row.skill?.trim();
+    const r  = (row.result || row.observedResult)?.trim();
+    const a  = (row.nextAdjustment || row.adjustment)?.trim();
+    const isEmpty = !d && !p && !s && !r && !a;
+
+    if (isEmpty) {
+      return `
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____/____</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">________________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">__________________</td>
+          <td style="padding:10px 14px;color:#94a3b8;font-family:monospace;letter-spacing:1px;font-size:12px;">____________</td>
+        </tr>
+      `;
+    }
+
+    return `
+      <tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:10px 14px;font-weight:600;color:#0f172a;font-size:12px;">${escHtml(d || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(p || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(s || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(r || '—')}</td>
+        <td style="padding:10px 14px;color:#334155;font-size:12px;">${escHtml(a || '—')}</td>
+      </tr>
+    `;
+  }).join('');
+
   return `
     ${renderProntuarioHeader(record)}
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <h3 style="font-size:18px;font-weight:800;color:var(--navy-900)">Plano Interdisciplinar do Paciente</h3>
-        <p style="font-size:12px;color:var(--text-muted)">Plano estruturado com metas mês a mês e orientação familiar</p>
+        <p style="font-size:12px;color:var(--text-muted)">Plano estruturado de intervenção integrada conforme modelo oficial</p>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-ghost btn-sm" onclick="openPlanModal('${record.id}')">
-          ✏️ ${plan ? 'Editar Plano' : 'Criar Plano'}
+          ✏️ Editar Plano
         </button>
         <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -1499,61 +1581,103 @@ function renderPlanoTab(record) {
       </div>
     </div>
 
-    ${!plan ? `
-      <div class="info-card" style="text-align:center;padding:40px 20px;">
-        <div style="font-size:36px;margin-bottom:12px">📄</div>
-        <h4 style="font-size:16px;color:var(--navy-800);margin-bottom:8px">Nenhum Plano Interdisciplinar criado ainda</h4>
-        <p style="font-size:13px;color:var(--text-muted);max-width:480px;margin:0 auto 20px;">
-          Crie o plano em 1 clique com metas mês a mês simplificadas e orientações familiares.
-        </p>
-        <button class="btn btn-primary" onclick="openPlanModal('${record.id}')">
-          ⚡ Criar Plano com Modelo Sugerido
-        </button>
+    <div style="background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm);">
+      <!-- 1. Identificação do Cabeçalho -->
+      <div style="display:flex;justify-content:space-between;border-bottom:2px solid var(--border-light);padding-bottom:14px;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--emerald-600);font-weight:700">Clínica ${escHtml(record.clinic || 'Integrar')}</span>
+          <h4 style="font-size:17px;font-weight:800;color:var(--navy-900);margin-top:2px">Plano de Intervenção Integrada</h4>
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--text-muted)">
+          <div>Período: <strong>${escHtml(plan.period || 'Setembro a dezembro de 2026 - flexível')}</strong></div>
+          <div>Frequência: <strong>${escHtml(plan.frequency || 'Cada profissional: 1 atendimento semanal de 60 minutos')}</strong></div>
+        </div>
       </div>
-    ` : `
-      <div style="background:#fff;border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm);">
-        <div style="display:flex;justify-content:space-between;border-bottom:2px solid var(--border-light);padding-bottom:14px;margin-bottom:16px;">
+
+      <!-- Profissionais Responsáveis -->
+      <div style="margin-bottom:18px">
+        <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">Profissionais Responsáveis:</strong>
+        <p style="font-size:13px;white-space:pre-line;color:var(--navy-800);margin-top:4px;font-weight:500;">${escHtml(plan.professionals || '')}</p>
+      </div>
+
+      <!-- QUADRO 1: Condução compartilhada (Substitui Objetivo Geral, conforme anexo) -->
+      <div style="margin-bottom:16px;background:#fefce8;border:1px solid #fde047;border-left:4px solid #f59e0b;padding:14px 16px;border-radius:8px;">
+        <div style="font-weight:700;font-size:12px;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span>🤝</span> Condução compartilhada
+        </div>
+        <p style="font-size:12.5px;color:#78350f;line-height:1.6;margin:0;">
+          ${escHtml(sharedGuidanceText)}
+        </p>
+      </div>
+
+      <!-- QUADRO 2: Critério comum (Conforme anexo da Ana Laura) -->
+      <div style="margin-bottom:18px;background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #059669;padding:14px 16px;border-radius:8px;">
+        <div style="font-weight:700;font-size:12px;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span>🎯</span> Critério comum
+        </div>
+        <p style="font-size:12.5px;color:#14532d;line-height:1.6;margin:0;">
+          ${escHtml(commonCriteriaText)}
+        </p>
+      </div>
+
+      <!-- Metas Mês a Mês -->
+      <div style="margin-bottom:18px;">
+        <strong style="font-size:11px;text-transform:uppercase;color:var(--navy-600);letter-spacing:0.5px;">4. Metas e Progressão:</strong>
+        <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px 14px;">
+          <p style="font-size:12.5px;white-space:pre-line;line-height:1.6;color:var(--navy-800);margin:0;">${escHtml(plan.monthlyGoals || 'Sem metas definidas.')}</p>
+        </div>
+      </div>
+
+      <!-- Orientação Familiar -->
+      <div style="margin-bottom:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:14px 16px;">
+        <strong style="font-size:11px;color:var(--navy-700);text-transform:uppercase;letter-spacing:0.5px;">5. Orientação à Família (Prática breve e natural):</strong>
+        <p style="font-size:12.5px;color:#334155;margin-top:5px;line-height:1.55;margin-bottom:0;">${escHtml(plan.familyBrief || '')}</p>
+      </div>
+
+      <!-- PARTE SOLICITADA: 6. Registro de resultados (Conforme anexo da Ana Laura) -->
+      <div style="margin-top:22px;border-top:1px solid var(--border-light);padding-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
-            <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--emerald-600);font-weight:700">Clínica ${escHtml(record.clinic || 'Integrar')}</span>
-            <h4 style="font-size:17px;font-weight:800;color:var(--navy-900);margin-top:2px">Plano de Intervenção Integrada</h4>
+            <h4 style="font-size:13.5px;font-weight:800;color:var(--navy-900);text-transform:uppercase;letter-spacing:0.5px;margin:0;">
+              6. Registro de resultados
+            </h4>
+            <p style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">Acompanhamento das habilidades trabalhadas e ajustes</p>
           </div>
-          <div style="text-align:right;font-size:11px;color:var(--text-muted)">
-            <div>Período: <strong>${escHtml(plan.period || 'Vigente')}</strong></div>
-            <div>Frequência: <strong>${escHtml(plan.frequency || 'Regular')}</strong></div>
+          <button type="button" class="btn btn-ghost btn-xs" onclick="openPlanModal('${record.id}')" title="Editar resultados e data de revisão">
+            ✏️ Editar Resultados
+          </button>
+        </div>
+
+        <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:var(--radius-md);">
+          <table class="reports-table" style="margin:0;width:100%;border-collapse:collapse;font-size:12px;">
+            <thead style="background:#0d3b38;color:#fff;">
+              <tr>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:14%;font-weight:700;">Data</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:20%;font-weight:700;">Profissional</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:26%;font-weight:700;">Habilidade trabalhada</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:24%;font-weight:700;">Resultado observado</th>
+                <th style="padding:9px 12px;text-align:left;color:#fff;width:16%;font-weight:700;">Próximo ajuste</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${resultRowsHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--navy-700);flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong>Revisão da equipe:</strong>
+            <span style="display:inline-block;padding:3px 10px;background:var(--navy-50);border:1px solid var(--border-light);border-radius:4px;font-weight:700;color:var(--navy-900);margin-left:6px;font-family:monospace;">
+              ${escHtml(plan.teamReviewDate || '____ / ____ / ______')}
+            </span>
           </div>
-        </div>
-
-        <div style="margin-bottom:16px">
-          <strong style="font-size:12px;text-transform:uppercase;color:var(--navy-700)">Profissionais Responsáveis:</strong>
-          <p style="font-size:13px;white-space:pre-line;color:var(--navy-800);margin-top:4px">${escHtml(plan.professionals || '')}</p>
-        </div>
-
-        <div style="margin-bottom:16px;background:#f0fdf4;border-left:3px solid #059669;padding:12px 14px;border-radius:4px;">
-          <strong style="font-size:12px;color:#047857;text-transform:uppercase">Objetivo Geral:</strong>
-          <p style="font-size:12.5px;color:var(--navy-900);margin-top:4px;line-height:1.5">${escHtml(plan.generalGoal || '')}</p>
-        </div>
-
-        <!-- Metas Mês a Mês -->
-        <div style="margin-bottom:16px;">
-          <strong style="font-size:12px;text-transform:uppercase;color:var(--navy-700)">Metas Mês a Mês:</strong>
-          <div style="margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
-            <p style="font-size:12.5px;white-space:pre-line;line-height:1.6;color:var(--navy-800);">${escHtml(plan.monthlyGoals || 'Sem metas definidas.')}</p>
-          </div>
-        </div>
-
-        <!-- Orientação Familiar -->
-        <div style="margin-bottom:16px;background:#fffbeb;border:1px solid #fde047;border-radius:6px;padding:12px 14px;">
-          <strong style="font-size:12px;color:#854d0e;text-transform:uppercase;">Orientação e Observação para a Família:</strong>
-          <p style="font-size:12.5px;color:#1e293b;margin-top:4px;line-height:1.5;">${escHtml(plan.familyBrief || '')}</p>
-        </div>
-
-        <div style="margin-top:20px;display:flex;justify-content:flex-end">
-          <button class="btn btn-primary" onclick="triggerPrintPlan()">
+          <button class="btn btn-primary btn-sm" onclick="triggerPrintPlan()">
             🖨️ Abrir Visualização para Impressão / Salvar PDF
           </button>
         </div>
       </div>
-    `}
+    </div>
   `;
 }
 
@@ -2230,25 +2354,34 @@ function renderPrintSessionSheet(data) {
   }, 150);
 }
 
-// ─── 9. CRIADOR DE PLANO (METAS APENAS MÊS A MÊS) ─────────
+// ─── 9. CRIADOR DE PLANO (CONDUÇÃO, CRITÉRIO, METAS & RESULTADOS) ─────────
 const SUGGESTED_PLAN_BENCHMARK = {
   professionals: "Leandro Moraes - Fonoaudiólogo\nGabriela Martins - Psicopedagoga Comportamental",
   frequency: "Cada profissional: 1 atendimento semanal de 60 minutos",
-  period: "Setembro a dezembro de 2026 - flexível conforme a evolução",
-  generalGoal: "Promover o desenvolvimento integrado nas áreas de linguagem, consciência fonológica, leitura, escrita, matemática, organização temporal, interação social e autonomia.",
-  specificGoals: "• Ampliar a consciência fonológica, relacionando sons da fala às letras e sílabas.\n• Avançar da leitura silábica para a leitura de palavras e frases curtas com maior compreensão.\n• Escrever o nome completo e palavras simples com redução gradual das ajudas.\n• Consolidar o reconhecimento, a sequência e o uso funcional dos números de 1 a 10.\n• Desenvolver noções de tempo: rotina, dias da semana e reconhecimento de horas.\n• Fortalecer habilidades de autonomia em pequenas tarefas e rotinas.",
-  sharedGuidance: "Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas.",
+  period: "Setembro a dezembro de 2026 - flexível conforme a evolução, podendo ser ajustado pela equipe",
+  generalGoal: "Promover o desenvolvimento integrado de Ana Laura nas áreas de linguagem, consciência fonológica, leitura, escrita, matemática, organização temporal, interação social, brincar e autonomia, ampliando respostas mais completas e independentes nas situações de aprendizagem e da vida diária.",
+  specificGoals: "• Ampliar a consciência fonológica, relacionando sons da fala às letras e às sílabas.\n• Avançar da leitura silábica para a leitura de palavras e frases curtas com maior compreensão.\n• Escrever o nome completo e palavras simples com redução gradual das ajudas.\n• Consolidar o reconhecimento, a sequência e o uso funcional dos números de 1 a 10.\n• Desenvolver noções de tempo: rotina, dias da semana e reconhecimento inicial de horas.\n• Ampliar o repertório de respostas, a intenção comunicativa e a interação social.\n• Expandir o brincar funcional para situações imaginativas, criativas e compartilhadas.\n• Fortalecer habilidades de autonomia em pequenas tarefas e rotinas.",
+  sharedGuidance: "Utilizar instruções curtas, apoio visual, modelagem, repetição planejada, atividades lúdicas e retirada gradual das pistas. Registrar respostas independentes, respostas com ajuda e habilidades que já aparecem em mais de um ambiente.",
   tableRows: [
-    { target: "Consciência fonológica", strategies: "Jogos de rimas, aliteração e segmentação silábica.", results: "Reconhece e manipula sons com maior precisão." },
-    { target: "Leitura e compreensão", strategies: "Leitura compartilhada, leitura em eco e textos curtos.", results: "Lê com menor silabação e maior compreensão." },
-    { target: "Escrita e nome completo", strategies: "Letras móveis, modelo visual e escrita espontânea.", results: "Escreve o nome completo com autonomia." },
-    { target: "Números e contagem", strategies: "Materiais concretos, pareamento e trilhas.", results: "Reconhece e representa quantidades de 1 a 10." },
-    { target: "Autonomia na rotina", strategies: "Rotina visual por etapas e reforço positivo.", results: "Organiza materiais e conclui pequenas tarefas com segurança." }
+    { target: "Consciência fonológica e relação som-letra", strategies: "Realizar jogos de rimas, aliteração, identificação do som inicial e final, segmentação de palavras em sílabas e união de sons. Relacionar fonema e grafema com figuras, letras móveis, pistas visuais e produção oral.", results: "Reconhece e manipula sons com maior precisão; associa sons às letras; identifica sílabas e forma palavras com menos ajuda." },
+    { target: "Leitura e compreensão", strategies: "Trabalhar leitura compartilhada, leitura em eco e releitura de palavras, frases e textos muito curtos. Explorar quem, o quê, onde e quando, utilizando imagens e perguntas objetivas antes de avançar para respostas mais abertas.", results: "Lê com menor dependência da silabação, compreende informações simples e responde com frases progressivamente mais completas." },
+    { target: "Escrita e nome completo", strategies: "Usar letras móveis, modelo visual, cópia próxima, completamento de letras ausentes, ditado apoiado e escrita espontânea. Treinar o nome completo em situações funcionais e retirar o modelo por etapas.", results: "Escreve o nome completo corretamente e registra palavras simples com melhor correspondência entre sons e letras." },
+    { target: "Números de 1 a 10", strategies: "Associar numeral e quantidade com materiais concretos, contagem de objetos, pareamento, sequência, jogos de trilha e pequenas situações do cotidiano. Alternar reconhecimento, ordenação e registro.", results: "Reconhece, ordena, conta e representa quantidades de 1 a 10 sem depender de repetição ou conferência constante." },
+    { target: "Noção de tempo", strategies: "Utilizar calendário, rotina visual e sequência de acontecimentos. Ensinar hoje, ontem e amanhã; dias da semana; manhã, tarde e noite; e reconhecimento inicial de horas cheias em relógio analógico e digital.", results: "Organiza acontecimentos em sequência, identifica os dias da semana e relaciona horários simples às atividades da rotina." },
+    { target: "Linguagem e interação social", strategies: "Ampliar perguntas e respostas por meio de descrição de imagens, relatos de experiências e conversas dirigidas. Criar oportunidades para iniciar interação, manter assunto, pedir ajuda, escolher e comentar.", results: "Responde de forma mais elaborada, inicia trocas comunicativas e sustenta interação por mais turnos com adultos e pares." },
+    { target: "Brincar imaginativo e criativo", strategies: "Partir do brincar funcional para cenas de casa, escola, mercado e consultório. Ensinar sequência de ações, troca de papéis, fala de personagens, criação de um problema simples e final da história.", results: "Cria e mantém pequenos roteiros, aceita ideias do outro, varia ações e participa de brincadeiras simbólicas com menor ajuda." },
+    { target: "Autonomia", strategies: "Dividir tarefas em passos visuais: organizar materiais, iniciar e concluir atividade, guardar objetos, escolher entre opções e solicitar ajuda somente quando necessário. Reforçar tentativas independentes.", results: "Realiza pequenas rotinas com menos prompts, organiza seus materiais e demonstra maior iniciativa e segurança." }
   ],
-  commonCriteria: "A habilidade será considerada em progresso quando realizá-la com menos ajuda e constância. Consolidada quando ocorrer em pelo menos dois ambientes distintos.",
-  monthlyGoals: "Mês 1 (Setembro) | Realizar linha de base; identificar preferências; iniciar rotina visual e relação som-letra.\nMês 2 (Outubro) | Fortalecer consciência silábica, leitura de palavras curtas e sequência numérica.\nMês 3 (Novembro) | Aumentar independência na escrita, situações funcionais com horas e pequenos textos.\nMês 4 (Dezembro) | Generalizar habilidades, orientar a família e definir próximos passos.",
-  familyBrief: "Realizar práticas curtas de 5 a 10 minutos inseridas naturalmente na rotina de casa. Valorizar o esforço e oferecer tempo hábil de resposta sem antecipar.",
-  familyGuidelines: "Leitura | Ler histórias curtas e pedir que aponte palavras conhecidas.\nEscrita | Estimular a assinatura do nome em desenhos e recados.\nTempo e números | Consultar calendário e relógio nas atividades do dia a dia.\nAutonomia | Incentivar a guardar brinquedos e preparar materiais com poucos passos por vez."
+  commonCriteria: "A habilidade será considerada em progresso quando Ana Laura realizá-la com menos ajuda e maior constância. Será considerada consolidada quando ocorrer com diferentes pessoas e em pelo menos duas atividades ou ambientes.",
+  monthlyGoals: "Setembro | Realizar linha de base; identificar preferências e níveis atuais; iniciar rotina visual, escrita do nome, relação som-letra, números de 1 a 10 e respostas ampliadas.\nOutubro | Fortalecer consciência silábica, leitura de palavras e frases, escrita com apoio reduzido, sequência numérica, dias da semana, interação dirigida e roteiros simples de brincar.\nNovembro | Aumentar independência e variar materiais e parceiros; trabalhar pequenos textos, escrita espontânea, situações funcionais com números e horas, relatos pessoais e brincadeiras com papéis.\nDezembro | Generalizar habilidades, reduzir pistas, comparar registros, orientar a família e definir as próximas metas conforme os resultados alcançados.",
+  familyBrief: "Realizar atividades curtas, de 5 a 10 minutos, inseridas na rotina e sem transformar o momento em prova. Valorizar o esforço, oferecer tempo para Ana Laura responder e evitar antecipar todas as respostas.",
+  familyGuidelines: "Leitura | Ler histórias curtas, pedir que localize letras, sílabas ou palavras conhecidas e fazer uma ou duas perguntas objetivas sobre a história.\nEscrita | Estimular a assinatura do nome completo em desenhos e atividades, oferecendo modelo apenas quando necessário e retirando-o gradualmente.\nTempo e números | Usar calendário e relógio na rotina: marcar o dia, contar objetos, escolher quantidades e relacionar horas cheias a atividades conhecidas.\nComunicação | Dar tempo para responder; pedir que conte com começo, meio e fim; ampliar a fala da criança sem corrigir de forma rígida.\nBrincar e autonomia | Criar brincadeiras de faz de conta, alternar papéis e permitir que organize e guarde seus materiais seguindo poucos passos de cada vez.",
+  resultRecords: [
+    { date: "", professional: "", skill: "", result: "", nextAdjustment: "" },
+    { date: "", professional: "", skill: "", result: "", nextAdjustment: "" },
+    { date: "", professional: "", skill: "", result: "", nextAdjustment: "" }
+  ],
+  teamReviewDate: "____ / ____ / ______"
 };
 
 function openPlanModal(recordId) {
@@ -2289,6 +2422,21 @@ function populatePlanForm(plan, patientName) {
   tbody.innerHTML = '';
   const rows = plan.tableRows || SUGGESTED_PLAN_BENCHMARK.tableRows;
   rows.forEach(r => addPlanTableRow(r.target, r.strategies, r.results));
+
+  const resTbody = document.getElementById('planResultsTableBody');
+  if (resTbody) {
+    resTbody.innerHTML = '';
+    const resRows = (plan.resultRecords && plan.resultRecords.length) ? plan.resultRecords : [
+      { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+      { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+      { date: '', professional: '', skill: '', result: '', nextAdjustment: '' }
+    ];
+    resRows.forEach(r => addPlanResultRow(r.date, r.professional, r.skill, r.result || r.observedResult, r.nextAdjustment || r.adjustment));
+  }
+  const reviewInput = document.getElementById('planTeamReview');
+  if (reviewInput) {
+    reviewInput.value = plan.teamReviewDate || '____ / ____ / ______';
+  }
 }
 
 function addPlanTableRow(target = '', strategies = '', results = '') {
@@ -2298,6 +2446,21 @@ function addPlanTableRow(target = '', strategies = '', results = '') {
     <td><textarea rows="2" class="row-target" placeholder="Área / Alvo">${escHtml(target)}</textarea></td>
     <td><textarea rows="3" class="row-strategies" placeholder="Estratégias">${escHtml(strategies)}</textarea></td>
     <td><textarea rows="3" class="row-results" placeholder="Resultados esperados">${escHtml(results)}</textarea></td>
+    <td style="text-align:center"><button type="button" class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="this.closest('tr').remove()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function addPlanResultRow(date = '', professional = '', skill = '', result = '', nextAdjustment = '') {
+  const tbody = document.getElementById('planResultsTableBody');
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="res-date" placeholder="____/____" value="${escHtml(date)}" style="font-size:11.5px;padding:6px 8px;"></td>
+    <td><input type="text" class="res-prof" placeholder="Profissional" value="${escHtml(professional)}" style="font-size:11.5px;padding:6px 8px;"></td>
+    <td><input type="text" class="res-skill" placeholder="Habilidade trabalhada" value="${escHtml(skill)}" style="font-size:11.5px;padding:6px 8px;"></td>
+    <td><input type="text" class="res-result" placeholder="Resultado observado" value="${escHtml(result)}" style="font-size:11.5px;padding:6px 8px;"></td>
+    <td><input type="text" class="res-adjust" placeholder="Próximo ajuste" value="${escHtml(nextAdjustment)}" style="font-size:11.5px;padding:6px 8px;"></td>
     <td style="text-align:center"><button type="button" class="btn btn-ghost btn-xs" style="color:var(--rose-600)" onclick="this.closest('tr').remove()">×</button></td>
   `;
   tbody.appendChild(tr);
@@ -2314,6 +2477,18 @@ function collectPlanData() {
     }
   });
 
+  const resRows = [];
+  document.querySelectorAll('#planResultsTableBody tr').forEach(tr => {
+    const date           = tr.querySelector('.res-date')?.value.trim() || '';
+    const professional   = tr.querySelector('.res-prof')?.value.trim() || '';
+    const skill          = tr.querySelector('.res-skill')?.value.trim() || '';
+    const result         = tr.querySelector('.res-result')?.value.trim() || '';
+    const nextAdjustment = tr.querySelector('.res-adjust')?.value.trim() || '';
+    if (date || professional || skill || result || nextAdjustment) {
+      resRows.push({ date, professional, skill, result, nextAdjustment });
+    }
+  });
+
   return {
     professionals: document.getElementById('planProfessionals').value.trim(),
     frequency: document.getElementById('planFrequency').value.trim(),
@@ -2323,9 +2498,11 @@ function collectPlanData() {
     sharedGuidance: document.getElementById('planSharedGuidance').value.trim(),
     tableRows: rows,
     commonCriteria: document.getElementById('planCommonCriteria').value.trim(),
-    monthlyGoals: document.getElementById('planMonthlyGoals').value.trim(), // METAS APENAS MÊS A MÊS
+    monthlyGoals: document.getElementById('planMonthlyGoals').value.trim(),
     familyBrief: document.getElementById('planFamilyBrief').value.trim(),
     familyGuidelines: document.getElementById('planFamilyGuidelines').value.trim(),
+    resultRecords: resRows,
+    teamReviewDate: document.getElementById('planTeamReview')?.value.trim() || '____ / ____ / ______',
     updatedAt: new Date().toISOString()
   };
 }
@@ -2425,6 +2602,44 @@ function printInterdisciplinaryPlan(record, plan) {
     const parts = line.split('|');
     return { situation: parts[0]?.trim() || '', guideline: parts[1]?.trim() || parts[0]?.trim() };
   });
+
+  const printResultRows = (plan.resultRecords && plan.resultRecords.length > 0)
+    ? plan.resultRecords
+    : [
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' },
+        { date: '', professional: '', skill: '', result: '', nextAdjustment: '' }
+      ];
+
+  const printResultRowsHtml = printResultRows.map(r => {
+    const d = r.date?.trim();
+    const p = r.professional?.trim();
+    const s = r.skill?.trim();
+    const res = (r.result || r.observedResult)?.trim();
+    const a = (r.nextAdjustment || r.adjustment)?.trim();
+    const isEmpty = !d && !p && !s && !res && !a;
+
+    if (isEmpty) {
+      return `
+        <tr>
+          <td style="font-family:monospace;font-size:8.5pt;height:24px;color:#94a3b8;">____/____</td>
+          <td style="font-family:monospace;font-size:8.5pt;color:#94a3b8;">____________</td>
+          <td style="font-family:monospace;font-size:8.5pt;color:#94a3b8;">________________</td>
+          <td style="font-family:monospace;font-size:8.5pt;color:#94a3b8;">__________________</td>
+          <td style="font-family:monospace;font-size:8.5pt;color:#94a3b8;">____________</td>
+        </tr>
+      `;
+    }
+    return `
+      <tr>
+        <td style="font-size:8.5pt;font-weight:700;">${escHtml(d || '—')}</td>
+        <td style="font-size:8.5pt;">${escHtml(p || '—')}</td>
+        <td style="font-size:8.5pt;">${escHtml(s || '—')}</td>
+        <td style="font-size:8.5pt;">${escHtml(res || '—')}</td>
+        <td style="font-size:8.5pt;">${escHtml(a || '—')}</td>
+      </tr>
+    `;
+  }).join('');
 
   pr.innerHTML = `
     <!-- PÁGINA 1 -->
@@ -2592,19 +2807,18 @@ function printInterdisciplinaryPlan(record, plan) {
           <thead>
             <tr>
               <th style="width:14%;">Data</th>
-              <th style="width:24%;">Profissional</th>
-              <th style="width:32%;">Habilidade trabalhada</th>
-              <th style="width:30%;">Resultado da Sessão</th>
+              <th style="width:20%;">Profissional</th>
+              <th style="width:26%;">Habilidade trabalhada</th>
+              <th style="width:24%;">Resultado observado</th>
+              <th style="width:16%;">Próximo ajuste</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
-            <tr><td style="height:22px;"></td><td></td><td></td><td></td></tr>
+            ${printResultRowsHtml}
           </tbody>
         </table>
         <div style="font-size:9pt;color:#475569;margin-top:14px;">
-          Revisão da equipe: ____ / ____ / ______
+          Revisão da equipe: <strong>${escHtml(plan.teamReviewDate || '____ / ____ / ______')}</strong>
         </div>
       </div>
 
