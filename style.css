@@ -930,6 +930,57 @@ body {
 .plan-table-edit input:focus, .plan-table-edit textarea:focus {
   border-color: var(--indigo-500); outline: none;
 }
+.plan-monthly-goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.plan-month-col-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-top: 3px solid var(--indigo-600);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform var(--ease-fast), box-shadow var(--ease-fast);
+}
+.plan-month-col-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+.plan-month-col-card .goal-month,
+.plan-month-col-card .tab-goal-month {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy-900);
+}
+.plan-month-col-card textarea {
+  width: 100%;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: #f8fafc;
+  color: var(--navy-900);
+  font-family: inherit;
+  transition: border-color var(--ease-fast), background var(--ease-fast);
+}
+.plan-month-col-card textarea:focus {
+  background: #ffffff;
+  border-color: var(--indigo-500);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+.res-result {
+  resize: vertical;
+  min-height: 48px;
+  font-family: inherit;
+  line-height: 1.45;
+}
 
 /* ── Dashboard de Relatórios Parciais & Métricas ── */
 .reports-dashboard {
@@ -1228,4 +1279,5 @@ body {
   .app-main { padding: 12px 16px; gap: 12px; }
   .detail-tabs { padding: 0 16px; }
   .prontuario { padding: 16px; }
+  .plan-monthly-goals-grid { grid-template-columns: 1fr; }
 }
